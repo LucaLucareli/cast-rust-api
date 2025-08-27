@@ -1,0 +1,26 @@
+[tasks.run_all]
+description = "Roda auth_api, admin_api e viewer_api simultaneamente com cores e prefixos"
+script = [
+    "cargo run -p admin_api -- --admin 2>&1 | awk '{print \"\\033[34m[ADMIN_API]\\033[0m \" $0}' &",
+    "cargo run -p auth_api -- --auth 2>&1 | awk '{print \"\\033[32m[AUTH_API]\\033[0m \" $0}' &",
+    "cargo run -p viewer_api -- --viewer 2>&1 | awk '{print \"\\033[35m[VIEWER_API]\\033[0m \" $0}' &",
+    "wait"
+]
+
+[tasks.run_auth]
+description = "Roda auth_api com log colorido"
+script = [
+    "cargo run -p auth_api -- --auth 2>&1 | awk '{print \"\\033[32m[AUTH_API]\\033[0m \" $0}'"
+]
+
+[tasks.run_admin]
+description = "Roda admin_api com log colorido"
+script = [
+    "cargo run -p admin_api -- --admin 2>&1 | awk '{print \"\\033[34m[ADMIN_API]\\033[0m \" $0}' &",
+]
+
+[tasks.run_viewer]
+description = "Roda viewer_api com log colorido"
+script = [
+    "cargo run -p viewer_api -- --viewer 2>&1 | awk '{print \"\\033[35m[VIEWER_API]\\033[0m \" $0}' &",
+]
