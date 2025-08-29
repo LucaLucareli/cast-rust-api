@@ -1,0 +1,22 @@
+#!/bin/sh
+# Pre-commit hook com cargo-husky
+
+echo "🚀 Rodando cargo fmt..."
+if ! cargo fmt -- --check 1>&2; then
+    echo "❌ Código não está formatado. Rode 'cargo fmt' antes de commitar."
+    exit 1
+fi
+
+echo "🔧 Rodando cargo build..."
+if ! cargo build 1>&2; then
+    echo "❌ Build falhou. Corrija os erros antes de commitar."
+    exit 1
+fi
+
+echo "🧪 Rodando cargo test..."
+if ! cargo test --quiet 1>&2; then
+    echo "❌ Alguns testes falharam. Corrija os testes antes de commitar."
+    exit 1
+fi
+
+echo "✅ Todos os checks passaram. Pode commitar!"

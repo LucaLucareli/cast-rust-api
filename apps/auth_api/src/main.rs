@@ -1,9 +1,9 @@
 use axum::Router;
+use socket2::{Domain, Protocol, Socket, Type};
 use std::net::{SocketAddr, TcpListener as StdTcpListener};
 use tokio::net::TcpListener;
-use socket2::{Socket, Domain, Type, Protocol};
-use tracing_subscriber;
 use tokio::signal;
+use tracing_subscriber;
 
 mod controllers;
 mod dto;
@@ -36,7 +36,9 @@ async fn main() {
     // Criar socket com SO_REUSEADDR
     let socket = Socket::new(Domain::IPV4, Type::STREAM, Some(Protocol::TCP))
         .expect("Falha ao criar socket");
-    socket.set_reuse_address(true).expect("Falha ao setar reuse_address");
+    socket
+        .set_reuse_address(true)
+        .expect("Falha ao setar reuse_address");
     socket.bind(&addr.into()).expect("Falha ao bindar a porta");
     socket.listen(1024).expect("Falha ao colocar em listen");
 
@@ -45,7 +47,8 @@ async fn main() {
         .set_nonblocking(true)
         .expect("Falha ao setar non-blocking");
 
-    let tokio_listener = TcpListener::from_std(std_listener).expect("Falha ao criar listener Tokio");
+    let tokio_listener =
+        TcpListener::from_std(std_listener).expect("Falha ao criar listener Tokio");
 
     // Cria uma task que escuta o Ctrl+C e fecha o processo
     let graceful = async {

@@ -6,6 +6,8 @@ members = [
     "shared"
 ]
 
+resolver = "2"
+
 [workspace.dependencies]
 axum = "0.7"
 tokio = { version = "1", features = ["full"] }
@@ -17,3 +19,17 @@ tracing-subscriber = "0.3"
 tracing = "0.1"
 dotenvy = "0.15.7"
 socket2 = "0.4"
+
+sea-orm = { version = "0.12", features = ["macros", "runtime-tokio-rustls"] }
+sea-query = "0.30"
+sea-query-binder = "0.5"
+sea-orm-cli = "0.12"
+
+sqlx = { version = "0.6.3", features = ["mssql", "runtime-tokio-rustls", "macros"] }
+
+
+bcrypt = "0.15"
+chrono = { version = "0.4", features = ["serde"] }
+redis = { version = "0.24", features = ["tokio-comp", "connection-manager"] }
+
+cargo-husky = { version = "1.5.0", features = ["precommit-hook","run-cargo-fmt","run-cargo-clippy"] }

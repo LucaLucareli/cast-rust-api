@@ -1,7 +1,7 @@
 use axum::routing::{get, post};
 use axum::Router;
 
-use crate::controllers::{user_controller};
+use crate::controllers::user_controller;
 
 pub fn create_router() -> Router {
     Router::new()

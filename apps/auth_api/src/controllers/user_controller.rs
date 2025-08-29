@@ -1,7 +1,7 @@
 // controllers/user_controller.rs
-use axum::Json;
-use crate::services::user_service;
 use crate::dto::user_dto::CreateUserDto;
+use crate::services::user_service;
+use axum::Json;
 
 pub async fn get_users() -> Json<Vec<String>> {
     let users = user_service::fetch_users().await;

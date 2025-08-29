@@ -14,3 +14,11 @@ tracing-subscriber = { workspace = true }
 shared = { workspace = true }
 dotenvy = { workspace = true }
 socket2 = { workspace = true }
+sea-orm = { workspace = true }
+sea-query = { workspace = true }
+sea-query-binder = { workspace = true }
+sea-orm-cli = { workspace = true }
+sqlx = { workspace = true }
+bcrypt = { workspace = true }
+chrono = { workspace = true }
+redis = { workspace = true }

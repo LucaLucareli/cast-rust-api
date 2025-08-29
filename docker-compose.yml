@@ -1,0 +1,35 @@
+version: '3.8'
+
+services:
+  # SQL Server
+  sqlserver:
+    build: ./docker/sqlserver
+    ports:
+      - "1433:1433"
+    environment:
+      - ACCEPT_EULA=Y
+      - SA_PASSWORD=YourStrong@Passw0rd
+      - DB_NAME=rust_cast_db
+    volumes:
+      - sqlserver_data:/var/opt/mssql
+      - ./docker/sqlserver/setup.sql:/docker-entrypoint-initdb.d/setup.sql
+    networks:
+      - api-network
+
+  # Redis
+  redis:
+    build: ./docker/redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - api-network
+
+volumes:
+  sqlserver_data:
+  redis_data:
+
+networks:
+  api-network:
+    driver: bridge
