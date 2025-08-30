@@ -1,3 +1,4 @@
+use chrono::NaiveDateTime;
 use sea_orm::entity::prelude::*;
 
 // ====================
@@ -17,9 +18,9 @@ pub mod users {
         pub role: String,
         pub profile_picture_url: Option<String>,
         pub subscription_status: Option<String>,
-        pub subscription_expires_at: Option<DateTimeUtc>,
-        pub created_at: DateTimeUtc,
-        pub updated_at: DateTimeUtc,
+        pub subscription_expires_at: Option<NaiveDateTime>,
+        pub created_at: Option<NaiveDateTime>,
+        pub updated_at: Option<NaiveDateTime>,
     }
 
     #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
@@ -41,7 +42,7 @@ pub mod categories {
         pub id: String,
         pub name: String,
         pub description: Option<String>,
-        pub created_at: DateTimeUtc,
+        pub created_at: Option<NaiveDateTime>,
     }
 
     #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
@@ -71,8 +72,8 @@ pub mod videos {
         pub trailer_url: Option<String>,
         pub is_featured: bool,
         pub is_available: bool,
-        pub created_at: DateTimeUtc,
-        pub updated_at: DateTimeUtc,
+        pub created_at: Option<NaiveDateTime>,
+        pub updated_at: Option<NaiveDateTime>,
     }
 
     #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
@@ -94,9 +95,9 @@ pub mod actors {
         pub id: String,
         pub name: String,
         pub biography: Option<String>,
-        pub birth_date: Option<DateTimeUtc>,
+        pub birth_date: Option<NaiveDateTime>,
         pub profile_picture_url: Option<String>,
-        pub created_at: DateTimeUtc,
+        pub created_at: Option<NaiveDateTime>,
     }
 
     #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
@@ -118,9 +119,9 @@ pub mod directors {
         pub id: String,
         pub name: String,
         pub biography: Option<String>,
-        pub birth_date: Option<DateTimeUtc>,
+        pub birth_date: Option<NaiveDateTime>,
         pub profile_picture_url: Option<String>,
-        pub created_at: DateTimeUtc,
+        pub created_at: Option<NaiveDateTime>,
     }
 
     #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
@@ -142,7 +143,7 @@ pub mod video_categories {
         pub id: String,
         pub video_id: String,
         pub category_id: String,
-        pub created_at: DateTimeUtc,
+        pub created_at: Option<NaiveDateTime>,
     }
 
     #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
@@ -166,7 +167,7 @@ pub mod video_actors {
         pub actor_id: String,
         pub role_name: Option<String>,
         pub is_lead: bool,
-        pub created_at: DateTimeUtc,
+        pub created_at: Option<NaiveDateTime>,
     }
 
     #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
@@ -188,7 +189,7 @@ pub mod video_directors {
         pub id: String,
         pub video_id: String,
         pub director_id: String,
-        pub created_at: DateTimeUtc,
+        pub created_at: Option<NaiveDateTime>,
     }
 
     #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
@@ -211,7 +212,7 @@ pub mod access_groups {
         pub name: String,
         pub description: Option<String>,
         pub permissions: Option<String>, // JSON
-        pub created_at: DateTimeUtc,
+        pub created_at: Option<NaiveDateTime>,
     }
 
     #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
@@ -233,7 +234,7 @@ pub mod users_access_groups {
         pub id: String,
         pub user_id: String,
         pub access_group_id: String,
-        pub assigned_at: DateTimeUtc,
+        pub assigned_at: Option<NaiveDateTime>,
         pub assigned_by: Option<String>,
     }
 
@@ -258,8 +259,8 @@ pub mod watch_history {
         pub video_id: String,
         pub watched_seconds: i32,
         pub is_completed: bool,
-        pub last_watched_at: DateTimeUtc,
-        pub created_at: DateTimeUtc,
+        pub last_watched_at: Option<NaiveDateTime>,
+        pub created_at: Option<NaiveDateTime>,
     }
 
     #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
@@ -281,7 +282,7 @@ pub mod favorites {
         pub id: String,
         pub user_id: String,
         pub video_id: String,
-        pub added_at: DateTimeUtc,
+        pub added_at: Option<NaiveDateTime>,
     }
 
     #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
@@ -305,8 +306,8 @@ pub mod ratings {
         pub video_id: String,
         pub rating: i32,
         pub comment: Option<String>,
-        pub created_at: DateTimeUtc,
-        pub updated_at: DateTimeUtc,
+        pub created_at: Option<NaiveDateTime>,
+        pub updated_at: Option<NaiveDateTime>,
     }
 
     #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]

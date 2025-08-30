@@ -22,3 +22,7 @@ sqlx = { workspace = true }
 bcrypt = { workspace = true }
 chrono = { workspace = true }
 redis = { workspace = true }
+validator = { workspace = true }
+anyhow = { workspace = true }
+hyper = { workspace = true }
+cargo-husky = { workspace = true }

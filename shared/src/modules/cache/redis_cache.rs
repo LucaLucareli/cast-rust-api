@@ -1,5 +1,5 @@
-use redis::{Client, Connection, Commands, RedisError};
-use serde::{Serialize, Deserialize};
+use redis::{Client, Commands, Connection, RedisError};
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
 pub struct RedisCache {
@@ -22,13 +22,14 @@ impl RedisCache {
         V: Serialize,
     {
         let mut conn = self.get_connection()?;
-        let serialized = serde_json::to_string(value)
-            .map_err(|e| RedisError::from((
-                redis::ErrorKind::InvalidArgument,
+        let serialized = serde_json::to_string(value).map_err(|e| {
+            RedisError::from((
+                redis::ErrorKind::TypeError,
                 "Serialization failed",
                 e.to_string(),
-            )))?;
-        
+            ))
+        })?;
+
         conn.set(key.as_ref(), serialized)
     }
 
@@ -39,38 +40,45 @@ impl RedisCache {
     {
         let mut conn = self.get_connection()?;
         let result: Option<String> = conn.get(key.as_ref())?;
-        
+
         if let Some(serialized) = result {
-            let deserialized = serde_json::from_str(&serialized)
-                .map_err(|e| RedisError::from((
-                    redis::ErrorKind::InvalidArgument,
+            let deserialized = serde_json::from_str(&serialized).map_err(|e| {
+                RedisError::from((
+                    redis::ErrorKind::TypeError,
                     "Deserialization failed",
                     e.to_string(),
-                )))?;
+                ))
+            })?;
             Ok(Some(deserialized))
         } else {
             Ok(None)
         }
     }
 
-    pub async fn set_with_ttl<K, V>(&self, key: K, value: &V, ttl_seconds: u64) -> Result<(), RedisError>
+    pub async fn set_with_ttl<K, V>(
+        &self,
+        key: K,
+        value: &V,
+        ttl_seconds: u64,
+    ) -> Result<(), RedisError>
     where
         K: AsRef<str>,
         V: Serialize,
     {
         let mut conn = self.get_connection()?;
-        let serialized = serde_json::to_string(value)
-            .map_err(|e| RedisError::from((
-                redis::ErrorKind::InvalidArgument,
+        let serialized = serde_json::to_string(value).map_err(|e| {
+            RedisError::from((
+                redis::ErrorKind::TypeError,
                 "Serialization failed",
                 e.to_string(),
-            )))?;
-        
+            ))
+        })?;
+
         let mut pipe = redis::pipe();
         pipe.set(key.as_ref(), serialized)
-            .expire(key.as_ref(), ttl_seconds as usize);
-        
-        pipe.execute(&mut conn)?;
+            .expire(key.as_ref(), ttl_seconds as i64)
+            .query::<()>(&mut conn)?; // tipo explícito
+
         Ok(())
     }
 
@@ -86,11 +94,9 @@ impl RedisCache {
     pub async fn clear_pattern(&self, pattern: &str) -> Result<u64, RedisError> {
         let mut conn = self.get_connection()?;
         let keys: Vec<String> = conn.keys(pattern)?;
-        
         if keys.is_empty() {
             return Ok(0);
         }
-        
         let result: i32 = conn.del(&keys)?;
         Ok(result as u64)
     }
@@ -118,13 +124,13 @@ impl RedisCache {
     {
         let mut conn = self.get_connection()?;
         let result: i32 = conn.ttl(key.as_ref())?;
-        
+
         if result > 0 {
             Ok(Some(result as u64))
         } else if result == -1 {
-            Ok(None) // Sem TTL
+            Ok(None)
         } else {
-            Ok(Some(0)) // Expirou
+            Ok(Some(0))
         }
     }
 
@@ -135,13 +141,13 @@ impl RedisCache {
         V: Serialize,
     {
         let mut conn = self.get_connection()?;
-        let serialized = serde_json::to_string(value)
-            .map_err(|e| RedisError::from((
-                redis::ErrorKind::InvalidArgument,
+        let serialized = serde_json::to_string(value).map_err(|e| {
+            RedisError::from((
+                redis::ErrorKind::TypeError,
                 "Serialization failed",
                 e.to_string(),
-            )))?;
-        
+            ))
+        })?;
         conn.hset(key.as_ref(), field.as_ref(), serialized)
     }
 
@@ -153,14 +159,14 @@ impl RedisCache {
     {
         let mut conn = self.get_connection()?;
         let result: Option<String> = conn.hget(key.as_ref(), field.as_ref())?;
-        
         if let Some(serialized) = result {
-            let deserialized = serde_json::from_str(&serialized)
-                .map_err(|e| RedisError::from((
-                    redis::ErrorKind::InvalidArgument,
+            let deserialized = serde_json::from_str(&serialized).map_err(|e| {
+                RedisError::from((
+                    redis::ErrorKind::TypeError,
                     "Deserialization failed",
                     e.to_string(),
-                )))?;
+                ))
+            })?;
             Ok(Some(deserialized))
         } else {
             Ok(None)
@@ -174,18 +180,17 @@ impl RedisCache {
     {
         let mut conn = self.get_connection()?;
         let result: HashMap<String, String> = conn.hgetall(key.as_ref())?;
-        
         let mut deserialized = HashMap::new();
         for (field, serialized) in result {
-            let value: V = serde_json::from_str(&serialized)
-                .map_err(|e| RedisError::from((
-                    redis::ErrorKind::InvalidArgument,
+            let value: V = serde_json::from_str(&serialized).map_err(|e| {
+                RedisError::from((
+                    redis::ErrorKind::TypeError,
                     "Deserialization failed",
                     e.to_string(),
-                )))?;
+                ))
+            })?;
             deserialized.insert(field, value);
         }
-        
         Ok(deserialized)
     }
 
@@ -201,11 +206,13 @@ impl RedisCache {
 
     pub async fn ping(&self) -> Result<String, RedisError> {
         let mut conn = self.get_connection()?;
-        conn.ping()
+        let pong: String = redis::cmd("PING").query(&mut conn)?;
+        Ok(pong)
     }
 
     pub async fn flush_all(&self) -> Result<(), RedisError> {
         let mut conn = self.get_connection()?;
-        conn.flushall()
+        redis::cmd("FLUSHALL").query::<()>(&mut conn)?; // explicit type
+        Ok(())
     }
 }

@@ -1,6 +1,6 @@
 // controllers/user_controller.rs
-use crate::dto::user_dto::CreateUserDto;
-use crate::services::user_service;
+use crate::modules::auth::dto::user_dto::CreateUserDto;
+use crate::modules::auth::services::user_service;
 use axum::Json;
 
 pub async fn get_users() -> Json<Vec<String>> {

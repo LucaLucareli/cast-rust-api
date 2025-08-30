@@ -1,9 +1,2 @@
-pub mod users;
-pub mod videos;
-pub mod categories;
-pub mod actors;
-pub mod directors;
-pub mod access_groups;
-pub mod watch_history;
-pub mod favorites;
-pub mod ratings;
+pub mod users_repository;
+pub mod videos_repository;

@@ -1,66 +1,77 @@
-use axum::Router;
+use axum::{extract::Extension, routing::get, serve, Router};
 use socket2::{Domain, Protocol, Socket, Type};
-use std::net::{SocketAddr, TcpListener as StdTcpListener};
-use tokio::net::TcpListener;
+use std::net::TcpListener as StdTcpListener;
+use std::sync::Arc;
 use tokio::signal;
-use tracing_subscriber;
+use tracing_subscriber::prelude::*;
+use tracing_subscriber::{fmt, EnvFilter};
 
-mod controllers;
-mod dto;
+use sea_orm::Database;
+use shared::modules::app_state;
+use shared::modules::auth::AuthService;
+use shared::modules::config::Config;
+use shared::modules::database::repositories::users_repository::UsersRepository;
+
+mod modules;
 mod routes;
-mod services;
 
 #[tokio::main]
-async fn main() {
-    dotenvy::dotenv().ok();
-    tracing_subscriber::fmt::init();
+async fn main() -> anyhow::Result<()> {
+    // Config
+    let config = Config::from_env()?;
 
-    let host = std::env::var("HOST").unwrap_or_else(|_| "127.0.0.1".to_string());
-    let port: u16 = std::env::var("AUTH_API_PORT")
-        .unwrap_or_else(|_| "2402".to_string())
-        .parse()
-        .expect("PORT deve ser um número");
+    // Logging
+    std::env::set_var("RUST_LOG", &config.log_level);
+    tracing_subscriber::registry()
+        .with(fmt::layer())
+        .with(EnvFilter::from_default_env())
+        .init();
 
-    let ip: std::net::IpAddr = host.parse().expect("IP inválido");
-    let addr = SocketAddr::new(ip, port);
+    // Serviços e repositórios
+    let auth_service = Arc::new(AuthService::new(
+        config.jwt_access_secret.clone(),
+        config.jwt_refresh_secret.clone(),
+        config.jwt_access_expiry_hours,
+        config.jwt_refresh_expiry_days,
+    ));
 
+    let db_conn = Database::connect(&config.database_url).await?;
+    let users_repo = Arc::new(UsersRepository::new(db_conn));
+
+    let app_state = Arc::new(app_state::AppState::new(auth_service, users_repo));
+
+    // Router
     let app = Router::new()
         .nest("/auth", routes::create_router())
-        .route("/", axum::routing::get(|| async { "Auth API - Running" }));
+        .route("/", get(|| async { "Auth API - Running" }))
+        .layer(Extension(app_state.clone()));
 
+    let addr = config.auth_api_addr();
     tracing::info!("Auth API iniciando em http://{}", addr);
     tracing::info!("Endpoints disponíveis:");
     tracing::info!("   - POST /auth/users");
     tracing::info!("   - GET  /auth/users");
+    tracing::info!("   - POST  /auth/users/login");
 
-    // Criar socket com SO_REUSEADDR
-    let socket = Socket::new(Domain::IPV4, Type::STREAM, Some(Protocol::TCP))
-        .expect("Falha ao criar socket");
-    socket
-        .set_reuse_address(true)
-        .expect("Falha ao setar reuse_address");
-    socket.bind(&addr.into()).expect("Falha ao bindar a porta");
-    socket.listen(1024).expect("Falha ao colocar em listen");
-
+    // TCP socket
+    let socket = Socket::new(Domain::IPV4, Type::STREAM, Some(Protocol::TCP))?;
+    socket.set_reuse_address(true)?;
+    socket.bind(&addr.into())?;
+    socket.listen(1024)?;
     let std_listener: StdTcpListener = socket.into();
-    std_listener
-        .set_nonblocking(true)
-        .expect("Falha ao setar non-blocking");
+    std_listener.set_nonblocking(true)?;
 
-    let tokio_listener =
-        TcpListener::from_std(std_listener).expect("Falha ao criar listener Tokio");
-
-    // Cria uma task que escuta o Ctrl+C e fecha o processo
-    let graceful = async {
+    // Shutdown
+    let shutdown_signal = async {
         signal::ctrl_c().await.expect("Falha ao capturar Ctrl+C");
         tracing::info!("Ctrl+C detectado! Encerrando servidor...");
     };
 
-    // Serve com Axum e aguarda Ctrl+C
-    tokio::select! {
-        _ = axum::serve(tokio_listener, app) => {},
-        _ = graceful => {},
-    }
+    // Serve usando Axum `serve`
+    serve(tokio::net::TcpListener::from_std(std_listener)?, app)
+        .with_graceful_shutdown(shutdown_signal)
+        .await?;
 
     tracing::info!("Servidor encerrado, porta liberada.");
+    Ok(())
 }

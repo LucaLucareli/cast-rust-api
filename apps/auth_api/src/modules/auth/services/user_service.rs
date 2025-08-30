@@ -1,4 +1,4 @@
-use crate::dto::user_dto::CreateUserDto;
+use crate::modules::auth::dto::user_dto::CreateUserDto;
 
 pub async fn fetch_users() -> Vec<String> {
     vec!["Alice".into(), "Bob".into()]

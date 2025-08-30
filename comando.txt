@@ -3,3 +3,9 @@ cargo make --makefile ./Makefile.toml --no-workspace run_all
 cargo make --makefile ./Makefile.toml --no-workspace run_auth
 cargo make --makefile ./Makefile.toml --no-workspace run_admin
 cargo make --makefile ./Makefile.toml --no-workspace run_viewer
+
+# Migration
+
+sea-orm-cli migrate init
+sea-orm-cli migrate generate create_streaming_schema
+

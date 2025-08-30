@@ -1,12 +1,11 @@
-use std::net::SocketAddr;
+use axum::http::Result;
 use serde::Deserialize;
-use crate::errors::Result;
+use std::net::SocketAddr;
 
 #[derive(Debug, Clone, Deserialize)]
 pub struct Config {
     pub database_url: String,
     pub redis_url: String,
-    pub api_port: u16,
     pub log_level: String,
     pub auth_api_port: u16,
     pub admin_api_port: u16,
@@ -22,27 +21,22 @@ impl Config {
         dotenvy::dotenv().ok();
 
         Ok(Config {
-            database_url: std::env::var("DATABASE_URL")
-                .unwrap_or_else(|_| "sqlserver://localhost:1433/rust_cast_db".to_string()),
+            database_url: std::env::var("DATABASE_URL").unwrap_or_else(|_| "".to_string()),
             redis_url: std::env::var("REDIS_URL")
                 .unwrap_or_else(|_| "redis://localhost:6379".to_string()),
-            api_port: std::env::var("API_PORT")
-                .unwrap_or_else(|_| "8000".to_string())
-                .parse()
-                .unwrap_or(8000),
             log_level: std::env::var("RUST_LOG").unwrap_or_else(|_| "info".to_string()),
             auth_api_port: std::env::var("AUTH_API_PORT")
-                .unwrap_or_else(|_| "3001".to_string())
+                .unwrap_or_else(|_| "2402".to_string())
                 .parse()
-                .unwrap_or(3001),
+                .unwrap_or(2402),
             admin_api_port: std::env::var("ADMIN_API_PORT")
-                .unwrap_or_else(|_| "3002".to_string())
+                .unwrap_or_else(|_| "1608".to_string())
                 .parse()
-                .unwrap_or(3002),
+                .unwrap_or(1608),
             viewer_api_port: std::env::var("VIEWER_API_PORT")
-                .unwrap_or_else(|_| "3003".to_string())
+                .unwrap_or_else(|_| "1606".to_string())
                 .parse()
-                .unwrap_or(3003),
+                .unwrap_or(1606),
             jwt_access_secret: std::env::var("JWT_ACCESS_SECRET")
                 .unwrap_or_else(|_| "your-access-secret-key-here".to_string()),
             jwt_refresh_secret: std::env::var("JWT_REFRESH_SECRET")
@@ -68,9 +62,5 @@ impl Config {
 
     pub fn viewer_api_addr(&self) -> SocketAddr {
         SocketAddr::from(([127, 0, 0, 1], self.viewer_api_port))
-    }
-
-    pub fn main_api_addr(&self) -> SocketAddr {
-        SocketAddr::from(([127, 0, 0, 1], self.api_port))
     }
 }
