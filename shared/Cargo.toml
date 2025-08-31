@@ -23,3 +23,9 @@ redis = { workspace = true }
 jsonwebtoken = { workspace = true }
 axum-extra = { workspace = true }
 cargo-husky = { workspace = true }
+validator = { workspace = true }
+tower = { workspace = true }
+futures = { workspace = true }
+http-body = { workspace = true }
+async-trait = { workspace = true }
+hyper = { workspace = true }

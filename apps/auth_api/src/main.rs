@@ -11,6 +11,7 @@ use shared::modules::app_state;
 use shared::modules::auth::AuthService;
 use shared::modules::config::Config;
 use shared::modules::database::repositories::users_repository::UsersRepository;
+use shared::modules::interceptors::transform_middleware::transform_middleware;
 
 mod modules;
 mod routes;
@@ -44,6 +45,7 @@ async fn main() -> anyhow::Result<()> {
     let app = Router::new()
         .nest("/auth", routes::create_router())
         .route("/", get(|| async { "Auth API - Running" }))
+        .layer(axum::middleware::from_fn(transform_middleware))
         .layer(Extension(app_state.clone()));
 
     let addr = config.auth_api_addr();

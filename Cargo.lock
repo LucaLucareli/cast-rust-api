@@ -3390,12 +3390,16 @@ dependencies = [
 name = "shared"
 version = "0.1.0"
 dependencies = [
+ "async-trait",
  "axum 0.8.4",
  "axum-extra",
  "bcrypt",
  "cargo-husky",
  "chrono",
  "dotenvy",
+ "futures",
+ "http-body 1.0.1",
+ "hyper 0.14.32",
  "jsonwebtoken",
  "redis",
  "sea-orm 0.12.15",
@@ -3406,9 +3410,11 @@ dependencies = [
  "serde_json",
  "sqlx 0.6.3",
  "tokio",
+ "tower 0.4.13",
  "tracing",
  "tracing-subscriber",
  "uuid",
+ "validator",
 ]
 
 [[package]]
@@ -4289,6 +4295,7 @@ dependencies = [
  "pin-project-lite",
  "tower-layer",
  "tower-service",
+ "tracing",
 ]
 
 [[package]]
