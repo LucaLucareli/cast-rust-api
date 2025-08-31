@@ -15,7 +15,7 @@ Este é um projeto monorepo em Rust que implementa um sistema de streaming de v�
 - **Middleware de admin**: Verifica permissões de administrador
 
 ### **Sistema de Banco de Dados Real**
-- **SQL Server**: Banco de dados principal
+- **PostgreSQL**: Banco de dados principal
 - **Repositórios funcionais**
 - **Hash de senhas**: Bcrypt para segurança
 
@@ -39,7 +39,7 @@ Este é um projeto monorepo em Rust que implementa um sistema de streaming de v�
 
 - Rust 1.70+
 - Docker e Docker Compose
-- SQL Server (via Docker)
+- PostgreSQL (via Docker)
 - Redis (via Docker)
 - Azurite (Azure Storage Emulator via Docker)
 
