@@ -117,25 +117,30 @@ impl AuthService {
         email: String,
         password: String,
     ) -> Result<AuthResponse, String> {
-        // Cria o request para autenticação
         let login_request = LoginRequest {
             email: email.clone(),
             password,
         };
 
-        // Usa o repository para autenticar
         let user_model = UsersRepository::authenticate(&state.user_repo, &login_request)
             .await
             .map_err(|e| format!("Erro ao acessar o banco de dados: {}", e))?
             .ok_or("Usuário ou senha inválidos")?;
 
-        // Converte o users::Model para o User interno do AuthService
+        let access_groups: Vec<AccessGroupEnum> = user_model
+            .access_group_ids
+            .into_iter()
+            .map(|id| (id as i32).into()) // se id for i32, From<i32> já funciona
+            .collect();
+
+        println!("{:?}", access_groups);
+
         let user = User {
             id: user_model.id.clone(),
             email: user_model.email.clone(),
             name: user_model.name.clone(),
             password_hash: user_model.password_hash.clone(),
-            access_groups: self.role_to_access_groups(&user_model.role),
+            access_groups,
         };
 
         // Gera tokens
@@ -146,16 +151,6 @@ impl AuthService {
             access_token,
             refresh_token,
         })
-    }
-
-    pub fn role_to_access_groups(&self, role: &str) -> Vec<AccessGroupEnum> {
-        match role {
-            "Viewer" => vec![AccessGroupEnum::VIEWER],
-            "Premium" => vec![AccessGroupEnum::PREMIUM],
-            "Admin" => vec![AccessGroupEnum::ADMIN],
-            "SuperAdmin" => vec![AccessGroupEnum::SUPER_ADMIN],
-            _ => vec![AccessGroupEnum::VIEWER],
-        }
     }
 
     /// Validar access token

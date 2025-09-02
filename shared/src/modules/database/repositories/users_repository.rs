@@ -1,11 +1,10 @@
 use crate::enums::access_group_enum::AccessGroupEnum;
 use bcrypt::{hash, verify, DEFAULT_COST};
 use chrono::Utc;
-use sea_orm::PaginatorTrait;
-use sea_orm::QueryFilter;
-use sea_orm::QueryOrder;
-use sea_orm::QuerySelect;
-use sea_orm::{ActiveModelTrait, ColumnTrait, DatabaseConnection, DbErr, EntityTrait, Set};
+use sea_orm::{
+    ActiveModelTrait, ColumnTrait, DatabaseConnection, DbErr, EntityTrait, FromQueryResult,
+    PaginatorTrait, QueryFilter, QueryOrder, QuerySelect, Set,
+};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
@@ -35,6 +34,24 @@ pub struct UpdateUserRequest {
 
 pub struct UsersRepository {
     db: DatabaseConnection,
+}
+
+#[derive(Debug, Clone)]
+pub struct AuthUser {
+    pub id: String,
+    pub name: String,
+    pub email: String,
+    pub password_hash: String,
+    pub access_group_ids: Vec<i32>,
+}
+
+#[derive(Debug, Clone, FromQueryResult)]
+pub struct AuthUserWithGroups {
+    pub id: String,
+    pub name: String,
+    pub email: String,
+    pub password_hash: String,
+    pub access_group_id: i32,
 }
 
 impl UsersRepository {
@@ -69,11 +86,35 @@ impl UsersRepository {
             .await
     }
 
-    pub async fn find_by_email(&self, email: &str) -> Result<Option<users::Model>, DbErr> {
-        users::Entity::find()
-            .filter(users::Column::Email.eq(email.to_string()))
-            .one(&self.db)
-            .await
+    pub async fn find_by_email(&self, email: &str) -> Result<Option<AuthUser>, DbErr> {
+        let rows: Vec<AuthUserWithGroups> = users::Entity::find()
+            .select_only()
+            .column(users::Column::Id)
+            .column(users::Column::Name)
+            .column(users::Column::Email)
+            .column(users::Column::PasswordHash)
+            .column(users_access_groups::Column::AccessGroupId)
+            .left_join(users_access_groups::Entity)
+            .filter(users::Column::Email.eq(email))
+            .into_model::<AuthUserWithGroups>()
+            .all(&self.db)
+            .await?;
+
+        if rows.is_empty() {
+            return Ok(None);
+        }
+
+        let access_group_ids: Vec<i32> = rows.iter().map(|r| r.access_group_id).collect();
+
+        let first = &rows[0];
+
+        Ok(Some(AuthUser {
+            id: first.id.clone(),
+            name: first.name.clone(),
+            email: first.email.clone(),
+            password_hash: first.password_hash.clone(),
+            access_group_ids,
+        }))
     }
 
     pub async fn find_all(
@@ -143,15 +184,12 @@ impl UsersRepository {
         }
     }
 
-    pub async fn authenticate(
-        &self,
-        request: &LoginRequest,
-    ) -> Result<Option<users::Model>, DbErr> {
-        if let Some(user) = self.find_by_email(&request.email).await? {
-            if verify(&request.password, &user.password_hash)
+    pub async fn authenticate(&self, request: &LoginRequest) -> Result<Option<AuthUser>, DbErr> {
+        if let Some(auth_user) = self.find_by_email(&request.email).await? {
+            if verify(&request.password, &auth_user.password_hash)
                 .map_err(|e| DbErr::Custom(format!("Erro ao verificar senha: {}", e)))?
             {
-                return Ok(Some(user));
+                return Ok(Some(auth_user));
             }
         }
         Ok(None)

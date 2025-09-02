@@ -24,7 +24,16 @@ pub mod users {
     }
 
     #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
-    pub enum Relation {}
+    pub enum Relation {
+        #[sea_orm(has_many = "super::users_access_groups::Entity")]
+        UsersAccessGroups,
+    }
+
+    impl Related<super::users_access_groups::Entity> for Entity {
+        fn to() -> RelationDef {
+            Relation::UsersAccessGroups.def()
+        }
+    }
 
     impl ActiveModelBehavior for ActiveModel {}
 }
@@ -208,7 +217,7 @@ pub mod access_groups {
     #[sea_orm(table_name = "access_groups")]
     pub struct Model {
         #[sea_orm(primary_key)]
-        pub id: String,
+        pub id: i32,
         pub name: String,
         pub description: Option<String>,
         pub permissions: Option<String>, // JSON
@@ -216,7 +225,16 @@ pub mod access_groups {
     }
 
     #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
-    pub enum Relation {}
+    pub enum Relation {
+        #[sea_orm(has_many = "super::users_access_groups::Entity")]
+        UsersAccessGroups,
+    }
+
+    impl Related<super::users_access_groups::Entity> for Entity {
+        fn to() -> RelationDef {
+            Relation::UsersAccessGroups.def()
+        }
+    }
 
     impl ActiveModelBehavior for ActiveModel {}
 }
@@ -233,13 +251,39 @@ pub mod users_access_groups {
         #[sea_orm(primary_key)]
         pub id: String,
         pub user_id: String,
-        pub access_group_id: String,
+        pub access_group_id: i32,
         pub assigned_at: Option<NaiveDateTime>,
         pub assigned_by: Option<String>,
     }
 
     #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
-    pub enum Relation {}
+    pub enum Relation {
+        #[sea_orm(
+            belongs_to = "super::users::Entity",
+            from = "Column::UserId",
+            to = "super::users::Column::Id"
+        )]
+        User,
+
+        #[sea_orm(
+            belongs_to = "super::access_groups::Entity",
+            from = "Column::AccessGroupId",
+            to = "super::access_groups::Column::Id"
+        )]
+        AccessGroup,
+    }
+
+    impl Related<super::users::Entity> for Entity {
+        fn to() -> RelationDef {
+            Relation::User.def()
+        }
+    }
+
+    impl Related<super::access_groups::Entity> for Entity {
+        fn to() -> RelationDef {
+            Relation::AccessGroup.def()
+        }
+    }
 
     impl ActiveModelBehavior for ActiveModel {}
 }
