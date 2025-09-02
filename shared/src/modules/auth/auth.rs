@@ -1,4 +1,5 @@
 use crate::modules::app_state::AppState;
+use crate::modules::database::repositories::users_repository::CreateUserRequest;
 use crate::{
     enums::access_group_enum::AccessGroupEnum,
     modules::database::repositories::users_repository::{LoginRequest, UsersRepository},
@@ -10,7 +11,6 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::RwLock;
-use uuid::Uuid;
 
 /// Estrutura do payload do token (semelhante ao TokenInfoDto)
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -77,36 +77,48 @@ impl AuthService {
     /// Registrar usuário
     pub async fn register(
         &self,
+        state: &AppState,
         email: String,
         name: String,
         password: String,
         access_groups: Vec<AccessGroupEnum>,
-    ) -> Result<TokenInfo, String> {
-        let mut users = self.users.write().await;
-
-        if users.values().any(|u| u.email == email) {
-            return Err("Usuário já existe".to_string());
+    ) -> Result<AuthResponse, String> {
+        if UsersRepository::find_by_email(&state.user_repo, &email)
+            .await
+            .map_err(|e| format!("Erro ao acessar o banco: {}", e))?
+            .is_some()
+        {
+            return Err("Falha ao cadastrar o usuário".to_string());
         }
 
-        let user_id = Uuid::new_v4().to_string();
         let password_hash =
             hash(password.as_bytes(), DEFAULT_COST).map_err(|_| "Erro ao criptografar senha")?;
 
-        let user = User {
-            id: user_id.clone(),
+        let new_user = CreateUserRequest {
             email: email.clone(),
             name: name.clone(),
-            password_hash,
-            access_groups: access_groups.clone(),
+            password_hash: password_hash.clone(),
+            access_group_ids: access_groups.iter().copied().map(|g| g as i32).collect(),
         };
 
-        users.insert(user_id.clone(), user);
+        let user_model = UsersRepository::create(&state.user_repo, new_user)
+            .await
+            .map_err(|e| format!("Erro ao criar usuário: {}", e))?;
 
-        Ok(TokenInfo {
-            id: user_id,
-            email,
-            name,
+        let user = User {
+            id: user_model.id.clone(),
+            email: user_model.email.clone(),
+            name: user_model.name.clone(),
+            password_hash: user_model.password_hash.clone(),
             access_groups,
+        };
+
+        let access_token = self.generate_access_token(&user)?;
+        let refresh_token = self.generate_refresh_token(&user)?;
+
+        Ok(AuthResponse {
+            access_token,
+            refresh_token,
         })
     }
 
@@ -127,13 +139,12 @@ impl AuthService {
             .map_err(|e| format!("Erro ao acessar o banco de dados: {}", e))?
             .ok_or("Usuário ou senha inválidos")?;
 
+        #[allow(clippy::unnecessary_cast)]
         let access_groups: Vec<AccessGroupEnum> = user_model
             .access_group_ids
             .into_iter()
             .map(|id| (id as i32).into()) // se id for i32, From<i32> já funciona
             .collect();
-
-        println!("{:?}", access_groups);
 
         let user = User {
             id: user_model.id.clone(),

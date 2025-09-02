@@ -1,5 +1,5 @@
 use crate::enums::access_group_enum::AccessGroupEnum;
-use bcrypt::{hash, verify, DEFAULT_COST};
+use bcrypt::verify;
 use chrono::Utc;
 use sea_orm::{
     ActiveModelTrait, ColumnTrait, DatabaseConnection, DbErr, EntityTrait, FromQueryResult,
@@ -20,15 +20,16 @@ pub struct LoginRequest {
 #[derive(Debug, Deserialize)]
 pub struct CreateUserRequest {
     pub email: String,
-    pub password: String,
+    pub password_hash: String,
     pub name: String,
-    pub role: Option<String>,
+    pub access_group_ids: Vec<i32>,
 }
 
 #[derive(Debug, Deserialize)]
 pub struct UpdateUserRequest {
     pub name: Option<String>,
     pub email: Option<String>,
+    pub access_group_ids: Vec<i32>,
     pub role: Option<String>,
 }
 
@@ -59,25 +60,49 @@ impl UsersRepository {
         Self { db }
     }
 
-    pub async fn create(&self, request: CreateUserRequest) -> Result<users::Model, DbErr> {
+    pub async fn create(&self, request: CreateUserRequest) -> Result<AuthUser, DbErr> {
+        use sea_orm::TransactionTrait;
+
+        let txn = self.db.begin().await?;
+
         let now = Utc::now().naive_utc();
-        let password_hash = hash(&request.password, DEFAULT_COST)
-            .map_err(|e| DbErr::Custom(format!("Erro ao hash da senha: {}", e)))?;
 
         let user = users::ActiveModel {
             id: Set(Uuid::new_v4().to_string()),
-            email: Set(request.email),
-            name: Set(request.name),
-            role: Set(request.role.unwrap_or_else(|| "Viewer".to_string())),
-            password_hash: Set(password_hash),
+            email: Set(request.email.clone()),
+            name: Set(request.name.clone()),
+            password_hash: Set(request.password_hash.clone()),
             created_at: Set(Some(now)),
+            role: Set("test".to_string()),
             updated_at: Set(Some(now)),
             profile_picture_url: Set(None),
             subscription_status: Set(None),
             subscription_expires_at: Set(None),
-        };
+        }
+        .insert(&txn)
+        .await?;
 
-        user.insert(&self.db).await
+        for group_id in &request.access_group_ids {
+            users_access_groups::ActiveModel {
+                id: Set(Uuid::new_v4().to_string()),
+                user_id: Set(user.id.clone()),
+                access_group_id: Set(*group_id),
+                assigned_at: Set(Some(now)),
+                assigned_by: Set(None),
+            }
+            .insert(&txn)
+            .await?;
+        }
+
+        txn.commit().await?;
+
+        Ok(AuthUser {
+            id: user.id,
+            name: user.name,
+            email: user.email,
+            password_hash: user.password_hash,
+            access_group_ids: request.access_group_ids,
+        })
     }
 
     pub async fn find_by_id(&self, user_id: &str) -> Result<Option<users::Model>, DbErr> {

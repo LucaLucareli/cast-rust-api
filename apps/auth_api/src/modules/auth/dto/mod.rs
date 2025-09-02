@@ -1,3 +1,4 @@
 pub mod login_input_dto;
 pub mod login_output_dto;
-pub mod user_dto;
+pub mod register_input_dto;
+pub mod register_output_dto;
