@@ -52,7 +52,8 @@ async fn main() -> anyhow::Result<()> {
     tracing::info!("Auth API iniciando em http://{}", addr);
     tracing::info!("Endpoints disponíveis:");
     tracing::info!("   - POST  /auth/users/login");
-    tracing::info!("   - POST /auth/users/register");
+    tracing::info!("   - POST  /auth/users/register");
+    tracing::info!("   - POST  /auth/users/refresh-token");
 
     // TCP socket
     let socket = Socket::new(Domain::IPV4, Type::STREAM, Some(Protocol::TCP))?;

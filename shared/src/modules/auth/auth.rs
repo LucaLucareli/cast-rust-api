@@ -6,13 +6,9 @@ use crate::{
 };
 use bcrypt::{hash, DEFAULT_COST};
 use chrono::{Duration, Utc};
-use jsonwebtoken::{decode, encode, DecodingKey, EncodingKey, Header, Validation};
+use jsonwebtoken::{decode, encode, Algorithm, DecodingKey, EncodingKey, Header, Validation};
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
-use std::sync::Arc;
-use tokio::sync::RwLock;
 
-/// Estrutura do payload do token (semelhante ao TokenInfoDto)
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct TokenInfo {
     pub id: String,
@@ -30,6 +26,13 @@ pub struct Claims {
     pub email: String,
     pub name: String,
     pub access_groups: Vec<AccessGroupEnum>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+struct RefreshClaims {
+    sub: String,
+    iat: i64,
+    exp: i64,
 }
 
 /// Representa o usuário interno
@@ -55,7 +58,6 @@ pub struct AuthService {
     refresh_secret: String,
     access_expiry_hours: u64,
     refresh_expiry_days: u64,
-    users: Arc<RwLock<HashMap<String, User>>>,
 }
 
 impl AuthService {
@@ -70,7 +72,6 @@ impl AuthService {
             refresh_secret,
             access_expiry_hours,
             refresh_expiry_days,
-            users: Arc::new(RwLock::new(HashMap::new())),
         }
     }
 
@@ -179,16 +180,46 @@ impl AuthService {
     }
 
     /// Validar refresh token e gerar novo access token
-    pub async fn refresh_token(&self, refresh_token: &str) -> Result<String, String> {
+    pub async fn refresh_token(
+        &self,
+        state: &AppState,
+        refresh_token: String,
+    ) -> Result<AuthResponse, String> {
         let key = DecodingKey::from_secret(self.refresh_secret.as_ref());
-        let token_data = decode::<Claims>(refresh_token, &key, &Validation::default())
-            .map_err(|_| "Refresh token inválido".to_string())?;
+
+        let mut validation = Validation::new(Algorithm::HS256);
+        validation.validate_exp = true;
+
+        let token_data =
+            decode::<RefreshClaims>(&refresh_token, &key, &validation).map_err(|err| match *err
+                .kind()
+            {
+                jsonwebtoken::errors::ErrorKind::InvalidToken => "Token inválido".to_string(),
+                jsonwebtoken::errors::ErrorKind::ExpiredSignature => "Token expirado".to_string(),
+                _ => "Erro ao validar refresh token".to_string(),
+            })?;
 
         let user_id = token_data.claims.sub;
-        let users = self.users.read().await;
-        let user = users.get(&user_id).ok_or("Usuário não encontrado")?;
+        let user_model = UsersRepository::find_by_id(&state.user_repo, &user_id)
+            .await
+            .map_err(|e| format!("Erro ao acessar o banco de dados: {}", e))?
+            .ok_or("Usuário não encontrado")?;
 
-        self.generate_access_token(user)
+        let user = User {
+            id: user_model.id,
+            email: user_model.email,
+            name: user_model.name,
+            password_hash: user_model.password_hash,
+            access_groups: user_model.access_groups,
+        };
+
+        let access_token = self.generate_access_token(&user)?;
+        let refresh_token = self.generate_refresh_token(&user)?;
+
+        Ok(AuthResponse {
+            access_token,
+            refresh_token,
+        })
     }
 
     fn generate_access_token(&self, user: &User) -> Result<String, String> {
@@ -213,11 +244,8 @@ impl AuthService {
         let now = Utc::now();
         let exp = now + Duration::days(self.refresh_expiry_days as i64);
 
-        let claims = Claims {
+        let claims = RefreshClaims {
             sub: user.id.clone(),
-            email: user.email.clone(),
-            name: user.name.clone(),
-            access_groups: user.access_groups.clone(),
             iat: now.timestamp(),
             exp: exp.timestamp(),
         };

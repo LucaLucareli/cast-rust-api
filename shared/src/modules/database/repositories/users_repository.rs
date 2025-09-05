@@ -55,6 +55,24 @@ pub struct AuthUserWithGroups {
     pub access_group_id: i32,
 }
 
+#[derive(Debug, Clone)]
+pub struct FindByIdUser {
+    pub id: String,
+    pub email: String,
+    pub name: String,
+    pub password_hash: String,
+    pub access_groups: Vec<AccessGroupEnum>,
+}
+
+#[derive(Debug, Clone, FromQueryResult)]
+pub struct UserWithGroups {
+    pub id: String,
+    pub name: String,
+    pub email: String,
+    pub password_hash: String,
+    pub access_group_id: i32,
+}
+
 impl UsersRepository {
     pub fn new(db: DatabaseConnection) -> Self {
         Self { db }
@@ -105,10 +123,39 @@ impl UsersRepository {
         })
     }
 
-    pub async fn find_by_id(&self, user_id: &str) -> Result<Option<users::Model>, DbErr> {
-        users::Entity::find_by_id(user_id.to_string())
-            .one(&self.db)
-            .await
+    pub async fn find_by_id(&self, user_id: &str) -> Result<Option<FindByIdUser>, DbErr> {
+        let rows: Vec<UserWithGroups> = users::Entity::find()
+            .select_only()
+            .column(users::Column::Id)
+            .column(users::Column::Name)
+            .column(users::Column::Email)
+            .column(users::Column::PasswordHash)
+            .column(users_access_groups::Column::AccessGroupId)
+            .left_join(users_access_groups::Entity)
+            .filter(users::Column::Id.eq(user_id))
+            .into_model::<UserWithGroups>()
+            .all(&self.db)
+            .await?;
+
+        if rows.is_empty() {
+            return Ok(None);
+        }
+
+        #[allow(clippy::unnecessary_cast)]
+        let access_groups: Vec<AccessGroupEnum> = rows
+            .iter()
+            .map(|r| (r.access_group_id as i32).into())
+            .collect();
+
+        let first = &rows[0];
+
+        Ok(Some(FindByIdUser {
+            id: first.id.clone(),
+            name: first.name.clone(),
+            email: first.email.clone(),
+            password_hash: first.password_hash.clone(),
+            access_groups,
+        }))
     }
 
     pub async fn find_by_email(&self, email: &str) -> Result<Option<AuthUser>, DbErr> {
@@ -174,40 +221,40 @@ impl UsersRepository {
             .collect())
     }
 
-    pub async fn update(
-        &self,
-        user_id: &str,
-        request: UpdateUserRequest,
-    ) -> Result<Option<users::Model>, DbErr> {
-        if let Some(user) = self.find_by_id(user_id).await? {
-            let mut active_model: users::ActiveModel = user.into();
-            if let Some(name) = request.name {
-                active_model.name = Set(name);
-            }
-            if let Some(email) = request.email {
-                active_model.email = Set(email);
-            }
-            if let Some(role) = request.role {
-                active_model.role = Set(role);
-            }
-            active_model.updated_at = Set(Some(Utc::now().naive_utc()));
+    // pub async fn update(
+    //     &self,
+    //     user_id: &str,
+    //     request: UpdateUserRequest,
+    // ) -> Result<Option<users::Model>, DbErr> {
+    //     if let Some(user) = self.find_by_id(user_id).await? {
+    //         let mut active_model: users::ActiveModel = user.into();
+    //         if let Some(name) = request.name {
+    //             active_model.name = Set(name);
+    //         }
+    //         if let Some(email) = request.email {
+    //             active_model.email = Set(email);
+    //         }
+    //         if let Some(role) = request.role {
+    //             active_model.role = Set(role);
+    //         }
+    //         active_model.updated_at = Set(Some(Utc::now().naive_utc()));
 
-            let updated = active_model.update(&self.db).await?;
-            Ok(Some(updated))
-        } else {
-            Ok(None)
-        }
-    }
+    //         let updated = active_model.update(&self.db).await?;
+    //         Ok(Some(updated))
+    //     } else {
+    //         Ok(None)
+    //     }
+    // }
 
-    pub async fn delete(&self, user_id: &str) -> Result<bool, DbErr> {
-        if let Some(user) = self.find_by_id(user_id).await? {
-            let active_model: users::ActiveModel = user.into();
-            let res = active_model.delete(&self.db).await?;
-            Ok(res.rows_affected > 0)
-        } else {
-            Ok(false)
-        }
-    }
+    // pub async fn delete(&self, user_id: &str) -> Result<bool, DbErr> {
+    //     if let Some(user) = self.find_by_id(user_id).await? {
+    //         let active_model: users::ActiveModel = user.into();
+    //         let res = active_model.delete(&self.db).await?;
+    //         Ok(res.rows_affected > 0)
+    //     } else {
+    //         Ok(false)
+    //     }
+    // }
 
     pub async fn authenticate(&self, request: &LoginRequest) -> Result<Option<AuthUser>, DbErr> {
         if let Some(auth_user) = self.find_by_email(&request.email).await? {
