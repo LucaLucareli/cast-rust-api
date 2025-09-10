@@ -26,3 +26,4 @@ validator = { workspace = true }
 anyhow = { workspace = true }
 hyper = { workspace = true }
 cargo-husky = { workspace = true }
+macros = { workspace = true }

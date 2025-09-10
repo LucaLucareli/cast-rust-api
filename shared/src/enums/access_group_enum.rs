@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[repr(i32)]
-#[serde(into = "i32")] // converte automaticamente para i32 ao serializar
+#[serde(into = "i32")]
 #[allow(non_camel_case_types)]
 pub enum AccessGroupEnum {
     VIEWER = 1,

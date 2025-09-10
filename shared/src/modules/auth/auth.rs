@@ -14,7 +14,7 @@ pub struct TokenInfo {
     pub id: String,
     pub email: String,
     pub name: String,
-    pub access_groups: Vec<AccessGroupEnum>,
+    pub access_groups: Vec<i32>,
 }
 
 /// Estrutura do token JWT
@@ -25,7 +25,7 @@ pub struct Claims {
     pub iat: i64,
     pub email: String,
     pub name: String,
-    pub access_groups: Vec<AccessGroupEnum>,
+    pub access_groups: Vec<i32>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -144,7 +144,7 @@ impl AuthService {
         let access_groups: Vec<AccessGroupEnum> = user_model
             .access_group_ids
             .into_iter()
-            .map(|id| (id as i32).into()) // se id for i32, From<i32> já funciona
+            .map(|id| (id as i32).into())
             .collect();
 
         let user = User {
@@ -222,7 +222,7 @@ impl AuthService {
         })
     }
 
-    fn generate_access_token(&self, user: &User) -> Result<String, String> {
+    pub fn generate_access_token(&self, user: &User) -> Result<String, String> {
         let now = Utc::now();
         let exp = now + Duration::hours(self.access_expiry_hours as i64);
 
@@ -230,12 +230,13 @@ impl AuthService {
             sub: user.id.clone(),
             email: user.email.clone(),
             name: user.name.clone(),
-            access_groups: user.access_groups.clone(),
+            access_groups: user.access_groups.iter().map(|g| *g as i32).collect(),
             iat: now.timestamp(),
             exp: exp.timestamp(),
         };
 
-        let key = EncodingKey::from_secret(self.access_secret.as_ref());
+        let key = EncodingKey::from_secret(self.access_secret.as_bytes());
+
         encode(&Header::default(), &claims, &key)
             .map_err(|_| "Erro ao gerar access token".to_string())
     }
@@ -253,5 +254,35 @@ impl AuthService {
         let key = EncodingKey::from_secret(self.refresh_secret.as_ref());
         encode(&Header::default(), &claims, &key)
             .map_err(|_| "Erro ao gerar refresh token".to_string())
+    }
+}
+
+pub fn user_from_jwt(token: &str, secret: &str) -> Result<User, jsonwebtoken::errors::Error> {
+    let token = token.trim();
+    let secret = secret.trim();
+
+    let mut validation = Validation::new(Algorithm::HS256);
+    validation.validate_exp = true;
+
+    match decode::<Claims>(
+        token,
+        &DecodingKey::from_secret(secret.as_bytes()),
+        &validation,
+    ) {
+        Ok(token_data) => {
+            let claims = token_data.claims;
+
+            Ok(User {
+                id: claims.sub,
+                email: claims.email,
+                name: claims.name,
+                password_hash: "".to_string(),
+                access_groups: claims.access_groups.into_iter().map(|i| i.into()).collect(),
+            })
+        }
+        Err(err) => {
+            println!("Erro ao decodificar JWT: {:?}", err);
+            Err(err)
+        }
     }
 }
