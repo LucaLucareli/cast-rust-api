@@ -1,34 +1,76 @@
-// // use axum::Router;
-// use std::net::SocketAddr;
-// // use tokio::net::TcpListener;
-// use tracing_subscriber;
+use axum::{extract::Extension, routing::get, serve, Router};
+use socket2::{Domain, Protocol, Socket, Type};
+use std::net::TcpListener as StdTcpListener;
+use std::sync::Arc;
+use tokio::signal;
+use tracing_subscriber::prelude::*;
+use tracing_subscriber::{fmt, EnvFilter};
 
-// mod controllers;
-// mod dto;
-// mod routes;
-// mod services;
+use sea_orm::Database;
+use shared::modules::app_state;
+use shared::modules::auth::AuthService;
+use shared::modules::config::Config;
+use shared::modules::database::repositories::users_repository::UsersRepository;
+use shared::modules::interceptors::transform_middleware::transform_middleware;
+
+// mod modules;
+mod routes;
 
 #[tokio::main]
-async fn main() {
-    //     dotenvy::dotenv().ok();
+async fn main() -> anyhow::Result<()> {
+    // Config
+    let config = Config::from_env()?;
 
-    //     tracing_subscriber::fmt::init();
+    // Logging
+    std::env::set_var("RUST_LOG", &config.log_level);
+    tracing_subscriber::registry()
+        .with(fmt::layer())
+        .with(EnvFilter::from_default_env())
+        .init();
 
-    //     let host = std::env::var("HOST").unwrap_or("127.0.0.1".to_string());
-    //     let port: u16 = std::env::var("VIEWER_API_PORT")
-    //         .unwrap_or("1606".to_string())
-    //         .parse()
-    //         .expect("PORT deve ser um número");
+    // Serviços e repositórios
+    let auth_service = Arc::new(AuthService::new(
+        config.jwt_access_secret.clone(),
+        config.jwt_refresh_secret.clone(),
+        config.jwt_access_expiry_hours,
+        config.jwt_refresh_expiry_days,
+    ));
 
-    //     let addr = SocketAddr::from((host.parse::<std::net::IpAddr>().unwrap(), port));
+    let db_conn = Database::connect(&config.database_url).await?;
+    let users_repo = Arc::new(UsersRepository::new(db_conn));
 
-    //     // let app = Router::new()
-    //     //     .nest("/viewr", routes::create_router())
-    //     //     .route("/", axum::routing::get(|| async { "Viewr API - Running" }));
+    let app_state = Arc::new(app_state::AppState::new(auth_service, users_repo));
 
-    //     tracing::info!("Viewr API iniciando em http://{}", addr);
-    //     tracing::info!("Endpoints disponíveis:");
+    // Router
+    let app = Router::new()
+        // .nest("/viewer", routes::create_router())
+        .route("/", get(|| async { "Viewer API - Running" }))
+        .layer(axum::middleware::from_fn(transform_middleware))
+        .layer(Extension(app_state.clone()));
 
-    //     // let listener = TcpListener::bind(addr).await.unwrap();
-    //     // axum::serve(listener, app).await.unwrap();
+    let addr = config.viewer_api_addr();
+    tracing::info!("Viewer API iniciando em http://{}", addr);
+    tracing::info!("Endpoints disponíveis:");
+
+    // TCP socket
+    let socket = Socket::new(Domain::IPV4, Type::STREAM, Some(Protocol::TCP))?;
+    socket.set_reuse_address(true)?;
+    socket.bind(&addr.into())?;
+    socket.listen(1024)?;
+    let std_listener: StdTcpListener = socket.into();
+    std_listener.set_nonblocking(true)?;
+
+    // Shutdown
+    let shutdown_signal = async {
+        signal::ctrl_c().await.expect("Falha ao capturar Ctrl+C");
+        tracing::info!("Ctrl+C detectado! Encerrando servidor...");
+    };
+
+    // Serve usando Axum `serve`
+    serve(tokio::net::TcpListener::from_std(std_listener)?, app)
+        .with_graceful_shutdown(shutdown_signal)
+        .await?;
+
+    tracing::info!("Servidor encerrado, porta liberada.");
+    Ok(())
 }

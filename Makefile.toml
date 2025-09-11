@@ -1,26 +1,38 @@
-[tasks.run_all]
-description = "Roda auth_api, admin_api e viewer_api simultaneamente com cores e prefixos"
-script = [
-    "cargo run -p admin_api -- --admin 2>&1 | awk '{print \"\\033[34m[ADMIN_API]\\033[0m \" $0}' &",
-    "cargo run -p auth_api -- --auth 2>&1 | awk '{print \"\\033[32m[AUTH_API]\\033[0m \" $0}' &",
-    "cargo run -p viewer_api -- --viewer 2>&1 | awk '{print \"\\033[35m[VIEWER_API]\\033[0m \" $0}' &",
-    "wait"
+[tasks.pre-build-all]
+description = "Builds all APIs in debug mode before starting."
+command = "cargo"
+args = ["build", "--workspace"]
+
+[tasks.start-all]
+description = "Starts all API services concurrently with colored logs from debug binaries."
+dependencies = ["pre-build-all"]
+command = "concurrently"
+args = [
+    "-k",
+    "-p",
+    "[{name}]",
+    "-n",
+    "AuthApi,AdminApi",
+    "-c",
+    "blue,magenta,red",
+    "\"./target/debug/auth_api\"",
+    "\"./target/debug/admin_api\"",
 ]
 
-[tasks.run_auth]
-description = "Roda auth_api com log colorido"
-script = [
-    "cargo run -p auth_api -- --auth 2>&1 | awk '{print \"\\033[32m[AUTH_API]\\033[0m \" $0}'"
-]
+[tasks.start-auth-api]
+description = "Starts the auth_api"
+command = "cargo"
+args = ["run", "--package", "auth_api"]
+detached = true
 
-[tasks.run_admin]
-description = "Roda admin_api com log colorido"
-script = [
-    "cargo run -p admin_api -- --admin 2>&1 | awk '{print \"\\033[34m[ADMIN_API]\\033[0m \" $0}' &",
-]
+[tasks.start-admin-api]
+description = "Starts the admin_api"
+command = "cargo"
+args = ["run", "--package", "admin_api"]
+detached = true
 
-[tasks.run_viewer]
-description = "Roda viewer_api com log colorido"
-script = [
-    "cargo run -p viewer_api -- --viewer 2>&1 | awk '{print \"\\033[35m[VIEWER_API]\\033[0m \" $0}' &",
-]
+[tasks.start-viewer-api]
+description = "Starts the viewer_api"
+command = "cargo"
+args = ["run", "--package", "viewer_api"]
+detached = true

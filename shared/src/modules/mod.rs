@@ -1,5 +1,6 @@
 pub mod app_state;
 pub mod auth;
+pub mod azure_storage;
 pub mod cache;
 pub mod config;
 pub mod database;

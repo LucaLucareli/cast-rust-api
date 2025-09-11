@@ -29,3 +29,9 @@ futures = { workspace = true }
 http-body = { workspace = true }
 async-trait = { workspace = true }
 hyper = { workspace = true }
+azure_storage_blobs = { workspace = true }
+azure_storage = { workspace = true }
+azure_core = { workspace = true }
+url = { workspace = true }
+anyhow = { workspace = true }
+time = { version = "0.3", features = ["macros"] }

@@ -39,9 +39,30 @@ services:
       interval: 10s
       retries: 5
       timeout: 3s
+  
+  azurite:
+    image: mcr.microsoft.com/azure-storage/azurite
+    container_name: cast-rust-azurite
+    restart: unless-stopped
+    env_file:
+      - path: .env
+        required: true
+    volumes:
+      - azurite-data:/data
+    ports:
+      - '${AZURITE_BLOB_PORT:-10000}:10000'
+      - '${AZURITE_QUEUE_PORT:-10001}:10001'
+      - '${AZURITE_TABLE_PORT:-10002}:10002'
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:10000/cast-rust-azurite || exit 1"]
+      interval: 10s
+      retries: 5
+      timeout: 3s
 
 volumes:
   redis:
     driver: local
   postgres:
+    driver: local
+  azurite-data:
     driver: local

@@ -63,14 +63,14 @@ docker-compose up -d
 #### Executar todas as APIs individualmente ou juntas
 ```bash
 # Terminal 1 - Auth API
-cargo make --makefile ./Makefile.toml --no-workspace run_auth
+cargo make --no-workspace start-auth-api
 
 # Terminal 2 - Admin API  
-cargo make --makefile ./Makefile.toml --no-workspace run_admin
+cargo make --no-workspace start-admin-api
 
 # Terminal 3 - Viewer API
-cargo make --makefile ./Makefile.toml --no-workspace run_viewer
+cargo make --no-workspace start-viewer-api
 
 # Terminal 4 - API Principal
-cargo make --makefile ./Makefile.toml --no-workspace run_all
+cargo make --no-workspace start-all
 ```
