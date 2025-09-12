@@ -9,6 +9,7 @@ use azure_storage::StorageCredentials;
 use azure_storage_blobs::blob::operations::PutBlockBlobResponse;
 use azure_storage_blobs::prelude::*;
 use futures::StreamExt;
+use std::ops::Range;
 use std::sync::Arc;
 use time::OffsetDateTime;
 use tokio::io::{AsyncRead, AsyncReadExt};
@@ -169,5 +170,31 @@ impl StorageService {
         }
 
         Ok((blob_client.url()?.to_string(), total_bytes))
+    }
+
+    pub async fn get_blob_range(
+        &self,
+        blob_name: &str,
+        range: Option<Range<u64>>,
+    ) -> Result<Vec<u8>> {
+        let blob_client = self.get_blob_client(blob_name);
+
+        let mut get_blob = blob_client.get();
+
+        if let Some(r) = range {
+            get_blob = get_blob.range(r);
+        }
+
+        let mut stream = get_blob.into_stream();
+
+        let mut bytes = Vec::new();
+
+        while let Some(chunk) = stream.next().await {
+            let chunk = chunk?;
+            let chunk_bytes = chunk.data.collect().await?;
+            bytes.extend_from_slice(&chunk_bytes);
+        }
+
+        Ok(bytes)
     }
 }

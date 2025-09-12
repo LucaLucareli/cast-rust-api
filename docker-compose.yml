@@ -50,9 +50,9 @@ services:
     volumes:
       - azurite-data:/data
     ports:
-      - '${AZURITE_BLOB_PORT:-10000}:10000'
-      - '${AZURITE_QUEUE_PORT:-10001}:10001'
-      - '${AZURITE_TABLE_PORT:-10002}:10002'
+      - '${AZURE_CAST_RUST_BLOB_PORT:-10000}:10000'
+      - '${AZURE_CAST_RUST_QUEUE_PORT:-10001}:10001'
+      - '${AZURE_CAST_RUST_TABLE_PORT:-10002}:10002'
     healthcheck:
       test: ["CMD-SHELL", "curl -f http://localhost:10000/cast-rust-azurite || exit 1"]
       interval: 10s

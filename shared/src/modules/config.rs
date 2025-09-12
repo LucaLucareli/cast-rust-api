@@ -14,6 +14,14 @@ pub struct Config {
     pub jwt_refresh_secret: String,
     pub jwt_access_expiry_hours: u64,
     pub jwt_refresh_expiry_days: u64,
+
+    pub azure_cast_rustaccount_name: String,
+    pub azure_cast_rustaccount_key: String,
+    pub azure_cast_rustblob_port: u16,
+    pub azure_cast_rustqueue_port: u16,
+    pub azure_cast_rusttable_port: u16,
+    pub azure_cast_rust_video_container: String,
+    pub azure_cast_rust_storage_url: String,
 }
 
 impl Config {
@@ -49,6 +57,27 @@ impl Config {
                 .unwrap_or_else(|_| "7".to_string())
                 .parse()
                 .unwrap_or(7),
+
+            azure_cast_rustaccount_name: std::env::var("AZURE_CAST_RUST_ACCOUNT_NAME")
+                .unwrap_or_else(|_| "devstoreaccount1".to_string()),
+            azure_cast_rustaccount_key: std::env::var("AZURE_CAST_RUST_ACCOUNT_KEY")
+                .unwrap_or_else(|_| "Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==".to_string()),
+            azure_cast_rustblob_port: std::env::var("AZURE_CAST_RUST_BLOB_PORT")
+                .unwrap_or_else(|_| "10000".to_string())
+                .parse()
+                .unwrap_or(10000),
+            azure_cast_rustqueue_port: std::env::var("AZURE_CAST_RUST_QUEUE_PORT")
+                .unwrap_or_else(|_| "10001".to_string())
+                .parse()
+                .unwrap_or(10001),
+            azure_cast_rusttable_port: std::env::var("AZURE_CAST_RUST_TABLE_PORT")
+                .unwrap_or_else(|_| "10002".to_string())
+                .parse()
+                .unwrap_or(10002),
+            azure_cast_rust_video_container: std::env::var("AZURE_CAST_RUST_VIDEO_CONTAINER")
+                .unwrap_or_else(|_| "video".to_string()),
+            azure_cast_rust_storage_url: std::env::var("AZURE_CAST_RUST_STORAGE_URL")
+                .unwrap_or_else(|_| "http://0.0.0.0:10000/devstoreaccount1".to_string()),
         })
     }
 

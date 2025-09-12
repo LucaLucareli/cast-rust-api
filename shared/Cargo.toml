@@ -34,4 +34,5 @@ azure_storage = { workspace = true }
 azure_core = { workspace = true }
 url = { workspace = true }
 anyhow = { workspace = true }
-time = { version = "0.3", features = ["macros"] }
+slug = { workspace = true }
+time = { workspace = true }
