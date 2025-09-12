@@ -3,7 +3,7 @@ use serde::de::DeserializeOwned;
 use serde::Serialize;
 use validator::Validate;
 
-#[derive(Serialize)]
+#[derive(Serialize, Debug)]
 pub struct ValidationErrorResponse {
     pub message: String,
     pub errors: serde_json::Value,

@@ -1,12 +1,14 @@
 use anyhow::{anyhow, Result};
 use azure_core::auth::Secret;
+use azure_core::base64;
 use azure_core::Url;
 use azure_storage::prelude::SasToken;
 use azure_storage::shared_access_signature::service_sas::{
     BlobSasPermissions, BlobSharedAccessSignature, BlobSignedResource, SasKey,
 };
-use azure_storage::StorageCredentials;
 use azure_storage_blobs::blob::operations::PutBlockBlobResponse;
+use azure_storage_blobs::blob::BlobBlockType;
+use azure_storage_blobs::blob::BlockList;
 use azure_storage_blobs::prelude::*;
 use futures::StreamExt;
 use std::ops::Range;
@@ -30,21 +32,34 @@ pub struct StorageService {
 
 impl StorageService {
     pub async fn new(config: StorageServiceConfig) -> Result<Self> {
-        let credentials =
-            StorageCredentials::access_key(config.account_name.clone(), config.account_key.clone());
-
-        let blob_service_client =
-            BlobServiceClient::new(config.account_name.clone(), credentials.clone());
+        let blob_service_client = ClientBuilder::emulator().blob_service_client();
 
         let container_client =
             Arc::new(blob_service_client.container_client(config.container_name.clone()));
 
-        container_client
+        match container_client
             .create()
             .public_access(PublicAccess::None)
             .into_future()
             .await
-            .ok();
+        {
+            Ok(_) => {}
+            Err(e) => {
+                let msg = format!("{:?}", e);
+                if !msg.contains("ContainerAlreadyExists") {
+                    return Err(anyhow::anyhow!(
+                        "Não foi possível criar o container: {:?}",
+                        e
+                    ));
+                }
+            }
+        }
+
+        container_client
+            .get_properties()
+            .into_future()
+            .await
+            .map_err(|e| anyhow::anyhow!("Não foi possível acessar o container: {:?}", e))?;
 
         Ok(Self {
             container_client,
@@ -129,7 +144,7 @@ impl StorageService {
         Ok(blob_client.url()?.to_string())
     }
 
-    pub async fn upload_stream<R: AsyncRead + Unpin + Send>(
+    pub async fn upload_stream_with_blocks<R: AsyncRead + Unpin + Send>(
         &self,
         mut stream: R,
         blob_name: &str,
@@ -137,37 +152,59 @@ impl StorageService {
         blob_content_type: Option<&str>,
         max_file_size: Option<u64>,
     ) -> Result<(String, u64)> {
+        let mut total_bytes: u64 = 0;
+        let mut block_ids: Vec<String> = Vec::new();
+
+        let content_type = blob_content_type
+            .map(|s| s.to_string())
+            .unwrap_or_else(|| "application/octet-stream".to_string());
+
         let blob_client = self.container_client.blob_client(blob_name);
 
-        let mut total_bytes: u64 = 0;
         let mut buffer = vec![0u8; buffer_size];
+        let mut block_number = 0;
 
         loop {
             let n = stream.read(&mut buffer).await?;
             if n == 0 {
                 break;
             }
+
             total_bytes += n as u64;
 
             if let Some(max) = max_file_size {
                 if total_bytes > max {
                     return Err(anyhow::anyhow!(
-                        "O arquivo excede o tamanho de {} bytes",
+                        "The file exceeds the size of {} bytes",
                         max
                     ));
                 }
             }
 
-            let content_type = blob_content_type
-                .map(|s| s.to_string())
-                .unwrap_or_else(|| "application/octet-stream".to_string());
+            let chunk = buffer[..n].to_vec();
+
+            let block_id = format!("{:08}", block_number);
+            let block_id_base64 = base64::encode(&block_id);
 
             blob_client
-                .put_block_blob(buffer[..n].to_vec())
-                .content_type(content_type)
+                .put_block(block_id_base64.clone(), chunk)
                 .into_future()
                 .await?;
+
+            block_ids.push(block_id_base64);
+            block_number += 1;
         }
+
+        let mut block_list = BlockList { blocks: Vec::new() };
+        for id in block_ids {
+            block_list.blocks.push(BlobBlockType::Latest(id.into()));
+        }
+
+        blob_client
+            .put_block_list(block_list)
+            .content_type(content_type)
+            .into_future()
+            .await?;
 
         Ok((blob_client.url()?.to_string(), total_bytes))
     }

@@ -1,6 +1,6 @@
-use crate::app_state::AppState;
 use crate::modules::auth::dto::login_input_dto::LoginInputDTO;
 use crate::modules::auth::dto::login_output_dto::LoginOutputDTO;
+use crate::AppState;
 use std::sync::Arc;
 
 pub async fn execute(

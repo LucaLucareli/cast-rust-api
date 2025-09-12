@@ -1,6 +1,6 @@
-use crate::app_state::AppState;
 use crate::modules::auth::dto::login_input_dto::LoginInputDTO;
 use crate::modules::auth::dto::login_output_dto::LoginOutputDTO;
+use crate::AppState;
 use axum::{extract::Extension, http::StatusCode, Json};
 use serde::Serialize;
 use shared::modules::response_interface::ResponseInterface;

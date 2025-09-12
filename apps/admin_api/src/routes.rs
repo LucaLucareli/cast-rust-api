@@ -1,6 +1,6 @@
-use crate::modules::test::controllers::test_controller;
-use axum::{routing::get, Router};
+use crate::modules::video::controllers::upload_video_controller;
+use axum::{routing::post, Router};
 
 pub fn create_router() -> Router {
-    Router::new().route("/test", get(test_controller::handler))
+    Router::new().route("/video", post(upload_video_controller::handler))
 }

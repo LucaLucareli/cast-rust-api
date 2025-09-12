@@ -51,7 +51,7 @@ impl VideoStorageService {
 
         let (_blob_url, total_bytes) = self
             .storage_service
-            .upload_stream(
+            .upload_stream_with_blocks(
                 &mut file,
                 &blob_name,
                 8 * 1024, // buffer de 8KB

@@ -1,16 +1,12 @@
 use axum::{extract::Extension, routing::get, serve, Router};
 use socket2::{Domain, Protocol, Socket, Type};
 use std::net::TcpListener as StdTcpListener;
-use std::sync::Arc;
 use tokio::signal;
 use tracing_subscriber::prelude::*;
 use tracing_subscriber::{fmt, EnvFilter};
 
-use sea_orm::Database;
-use shared::modules::app_state;
-use shared::modules::auth::AuthService;
+use shared::modules::app_state::AppState;
 use shared::modules::config::Config;
-use shared::modules::database::repositories::users_repository::UsersRepository;
 use shared::modules::interceptors::transform_middleware::transform_middleware;
 
 // mod modules;
@@ -28,18 +24,7 @@ async fn main() -> anyhow::Result<()> {
         .with(EnvFilter::from_default_env())
         .init();
 
-    // Serviços e repositórios
-    let auth_service = Arc::new(AuthService::new(
-        config.jwt_access_secret.clone(),
-        config.jwt_refresh_secret.clone(),
-        config.jwt_access_expiry_hours,
-        config.jwt_refresh_expiry_days,
-    ));
-
-    let db_conn = Database::connect(&config.database_url).await?;
-    let users_repo = Arc::new(UsersRepository::new(db_conn));
-
-    let app_state = Arc::new(app_state::AppState::new(auth_service, users_repo));
+    let app_state = AppState::init(&config).await?;
 
     // Router
     let app = Router::new()

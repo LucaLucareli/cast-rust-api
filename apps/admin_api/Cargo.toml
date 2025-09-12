@@ -27,3 +27,6 @@ anyhow = { workspace = true }
 hyper = { workspace = true }
 cargo-husky = { workspace = true }
 macros = { workspace = true }
+futures = { workspace = true }
+tokio-util = { workspace = true }
+bytes = { workspace = true }

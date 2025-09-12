@@ -12,11 +12,12 @@ args = [
     "-p",
     "[{name}]",
     "-n",
-    "AuthApi,AdminApi",
+    "AuthApi,AdminApi,ViewerApi",
     "-c",
     "blue,magenta,red",
     "\"./target/debug/auth_api\"",
     "\"./target/debug/admin_api\"",
+    "\"./target/debug/viewer_api\""
 ]
 
 [tasks.start-auth-api]

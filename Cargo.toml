@@ -11,7 +11,7 @@ members = [
 resolver = "2"
 
 [workspace.dependencies]
-axum = { version = "0.8.4", features = ["macros"] }
+axum = { version = "0.8.4", features = ["macros", "multipart"] }
 tokio = { version = "1", features = ["full"] }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
@@ -47,3 +47,5 @@ azure_core = "0.21.0"
 url = "2.4.1"
 slug = "0.1"
 time = { version = "0.3", features = ["macros"] }
+tokio-util = { version = "0.7", features = ["io"] }
+bytes = "1"
