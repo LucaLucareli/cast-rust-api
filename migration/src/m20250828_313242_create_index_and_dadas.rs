@@ -8,9 +8,7 @@ pub struct Migration;
 #[async_trait::async_trait]
 impl MigrationTrait for Migration {
     async fn up(&self, manager: &SchemaManager) -> Result<(), DbErr> {
-        // =====================================
         // CRIAÇÃO DE ÍNDICES
-        // =====================================
 
         // USERS
         manager
@@ -32,6 +30,35 @@ impl MigrationTrait for Migration {
             )
             .await?;
 
+        // SERIES
+        manager
+            .create_index(
+                Index::create()
+                    .name("idx_series_title")
+                    .table(Series::Table)
+                    .col(Series::Title)
+                    .to_owned(),
+            )
+            .await?;
+        manager
+            .create_index(
+                Index::create()
+                    .name("idx_series_featured")
+                    .table(Series::Table)
+                    .col(Series::IsFeatured)
+                    .to_owned(),
+            )
+            .await?;
+        manager
+            .create_index(
+                Index::create()
+                    .name("idx_series_release_year")
+                    .table(Series::Table)
+                    .col(Series::ReleaseYear)
+                    .to_owned(),
+            )
+            .await?;
+
         // VIDEOS
         manager
             .create_index(
@@ -48,15 +75,6 @@ impl MigrationTrait for Migration {
                     .name("idx_videos_rating")
                     .table(Videos::Table)
                     .col(Videos::Rating)
-                    .to_owned(),
-            )
-            .await?;
-        manager
-            .create_index(
-                Index::create()
-                    .name("idx_videos_featured")
-                    .table(Videos::Table)
-                    .col(Videos::IsFeatured)
                     .to_owned(),
             )
             .await?;
@@ -182,24 +200,22 @@ impl MigrationTrait for Migration {
             )
             .await?;
 
-        // =====================================
         // DADOS INICIAIS
-        // =====================================
 
         // Categorias
         manager
             .get_connection()
             .execute_unprepared(
                 r#"
-                INSERT INTO categories (id, name, description, created_at) VALUES
-                ('cat-001', 'Ação', 'Filmes e séries de ação', NOW()),
-                ('cat-002', 'Comédia', 'Filmes e séries de comédia', NOW()),
-                ('cat-003', 'Drama', 'Filmes e séries dramáticos', NOW()),
-                ('cat-004', 'Ficção Científica', 'Filmes e séries de ficção científica', NOW()),
-                ('cat-005', 'Terror', 'Filmes e séries de terror', NOW()),
-                ('cat-006', 'Romance', 'Filmes e séries românticos', NOW()),
-                ('cat-007', 'Documentário', 'Documentários', NOW()),
-                ('cat-008', 'Animação', 'Filmes e séries animados', NOW())
+                INSERT INTO categories (name, description, created_at) VALUES
+                ('Ação', 'Filmes e séries de ação', NOW()),
+                ('Comédia', 'Filmes e séries de comédia', NOW()),
+                ('Drama', 'Filmes e séries dramáticos', NOW()),
+                ('Ficção Científica', 'Filmes e séries de ficção científica', NOW()),
+                ('Terror', 'Filmes e séries de terror', NOW()),
+                ('Romance', 'Filmes e séries românticos', NOW()),
+                ('Documentário', 'Documentários', NOW()),
+                ('Animação', 'Filmes e séries animados', NOW())
                 "#,
             )
             .await?;
@@ -210,13 +226,15 @@ impl MigrationTrait for Migration {
             .execute_unprepared(&format!(
                 r#"
                 INSERT INTO access_groups (id, name, description, created_at) VALUES
-                ({viewer}, 'Usuários Básicos', 'Acesso básico ao catálogo', NOW()),
-                ({premium}, 'Usuários Premium', 'Acesso completo ao catálogo', NOW()),
-                ({admin}, 'Administradores', 'Acesso total ao sistema', NOW())
+                ({}, 'Usuários Básicos', 'Acesso básico ao catálogo', NOW()),
+                ({}, 'Usuários Premium', 'Acesso completo ao catálogo', NOW()),
+                ({}, 'Administradores', 'Acesso ao admin ao sistema', NOW())
+                ({}, 'Super Administradores', 'Acesso total ao sistema', NOW())
                 "#,
-                viewer = AccessGroupEnum::VIEWER as i32,
-                premium = AccessGroupEnum::PREMIUM as i32,
-                admin = AccessGroupEnum::ADMIN as i32,
+                AccessGroupEnum::VIEWER as i32,
+                AccessGroupEnum::PREMIUM as i32,
+                AccessGroupEnum::ADMIN as i32,
+                AccessGroupEnum::SUPER_ADMIN as i32,
             ))
             .await?;
 
@@ -233,18 +251,91 @@ impl MigrationTrait for Migration {
             .await?;
 
         // Associação de usuários a grupos
-
         manager
             .get_connection()
             .execute_unprepared(&format!(
                 r#"
-                INSERT INTO users_access_groups (id, user_id, access_group_id, assigned_at) VALUES
-                ('uag-001', 'admin-001', {}, NOW()),
-                ('uag-002', 'viewer-001', {}, NOW())
+                INSERT INTO users_access_groups (user_id, access_group_id, assigned_at) VALUES
+                ('admin-001', {}, NOW()),
+                ('viewer-001', {}, NOW())
                 "#,
-                AccessGroupEnum::ADMIN as i32, // admin-001 pertence ao grupo ADMIN
-                AccessGroupEnum::VIEWER as i32  // viewer-001 pertence ao grupo VIEWER
+                AccessGroupEnum::ADMIN as i32,
+                AccessGroupEnum::VIEWER as i32,
             ))
+            .await?;
+
+        Ok(())
+    }
+
+    async fn down(&self, manager: &SchemaManager) -> Result<(), DbErr> {
+        // Drop all created indexes
+        manager
+            .drop_index(Index::drop().name("idx_users_email").to_owned())
+            .await?;
+        manager
+            .drop_index(Index::drop().name("idx_users_role").to_owned())
+            .await?;
+        manager
+            .drop_index(Index::drop().name("idx_series_title").to_owned())
+            .await?;
+        manager
+            .drop_index(Index::drop().name("idx_series_featured").to_owned())
+            .await?;
+        manager
+            .drop_index(Index::drop().name("idx_series_release_year").to_owned())
+            .await?;
+        manager
+            .drop_index(Index::drop().name("idx_videos_title").to_owned())
+            .await?;
+        manager
+            .drop_index(Index::drop().name("idx_videos_rating").to_owned())
+            .await?;
+        manager
+            .drop_index(Index::drop().name("idx_videos_available").to_owned())
+            .await?;
+        manager
+            .drop_index(Index::drop().name("idx_video_categories_video").to_owned())
+            .await?;
+        manager
+            .drop_index(
+                Index::drop()
+                    .name("idx_video_categories_category")
+                    .to_owned(),
+            )
+            .await?;
+        manager
+            .drop_index(Index::drop().name("idx_video_actors_video").to_owned())
+            .await?;
+        manager
+            .drop_index(Index::drop().name("idx_video_actors_actor").to_owned())
+            .await?;
+        manager
+            .drop_index(Index::drop().name("idx_video_directors_video").to_owned())
+            .await?;
+        manager
+            .drop_index(
+                Index::drop()
+                    .name("idx_video_directors_director")
+                    .to_owned(),
+            )
+            .await?;
+        manager
+            .drop_index(Index::drop().name("idx_watch_history_user").to_owned())
+            .await?;
+        manager
+            .drop_index(Index::drop().name("idx_watch_history_video").to_owned())
+            .await?;
+        manager
+            .drop_index(Index::drop().name("idx_favorites_user").to_owned())
+            .await?;
+        manager
+            .drop_index(Index::drop().name("idx_favorites_video").to_owned())
+            .await?;
+        manager
+            .drop_index(Index::drop().name("idx_ratings_user").to_owned())
+            .await?;
+        manager
+            .drop_index(Index::drop().name("idx_ratings_video").to_owned())
             .await?;
 
         Ok(())

@@ -13,7 +13,12 @@ impl MigrationTrait for Migration {
                     .table(Users::Table)
                     .if_not_exists()
                     .col(ColumnDef::new(Users::Id).string().not_null().primary_key())
-                    .col(ColumnDef::new(Users::Email).string().not_null())
+                    .col(
+                        ColumnDef::new(Users::Email)
+                            .string()
+                            .not_null()
+                            .unique_key(),
+                    )
                     .col(ColumnDef::new(Users::PasswordHash).string().not_null())
                     .col(ColumnDef::new(Users::Name).string().not_null())
                     .col(ColumnDef::new(Users::Role).string().not_null())
@@ -30,164 +35,6 @@ impl MigrationTrait for Migration {
             )
             .await?;
 
-        // CATEGORIES
-        manager
-            .create_table(
-                Table::create()
-                    .table(Categories::Table)
-                    .if_not_exists()
-                    .col(
-                        ColumnDef::new(Categories::Id)
-                            .string()
-                            .not_null()
-                            .primary_key(),
-                    )
-                    .col(ColumnDef::new(Categories::Name).string().not_null())
-                    .col(ColumnDef::new(Categories::Description).string().null())
-                    .col(ColumnDef::new(Categories::CreatedAt).date_time().not_null())
-                    .to_owned(),
-            )
-            .await?;
-
-        // VIDEOS
-        manager
-            .create_table(
-                Table::create()
-                    .table(Videos::Table)
-                    .if_not_exists()
-                    .col(ColumnDef::new(Videos::Id).string().not_null().primary_key())
-                    .col(ColumnDef::new(Videos::Title).string().not_null())
-                    .col(ColumnDef::new(Videos::Description).string().null())
-                    .col(ColumnDef::new(Videos::DurationSeconds).integer().not_null())
-                    .col(ColumnDef::new(Videos::ReleaseYear).integer().null())
-                    .col(ColumnDef::new(Videos::Rating).double().not_null())
-                    .col(ColumnDef::new(Videos::ThumbnailUrl).string().null())
-                    .col(ColumnDef::new(Videos::VideoUrl).string().null())
-                    .col(ColumnDef::new(Videos::TrailerUrl).string().null())
-                    .col(ColumnDef::new(Videos::IsFeatured).boolean().not_null())
-                    .col(ColumnDef::new(Videos::IsAvailable).boolean().not_null())
-                    .col(ColumnDef::new(Videos::CreatedAt).date_time().not_null())
-                    .col(ColumnDef::new(Videos::UpdatedAt).date_time().not_null())
-                    .to_owned(),
-            )
-            .await?;
-
-        // ACTORS
-        manager
-            .create_table(
-                Table::create()
-                    .table(Actors::Table)
-                    .if_not_exists()
-                    .col(ColumnDef::new(Actors::Id).string().not_null().primary_key())
-                    .col(ColumnDef::new(Actors::Name).string().not_null())
-                    .col(ColumnDef::new(Actors::Biography).string().null())
-                    .col(ColumnDef::new(Actors::BirthDate).date_time().null())
-                    .col(ColumnDef::new(Actors::ProfilePictureUrl).string().null())
-                    .col(ColumnDef::new(Actors::CreatedAt).date_time().not_null())
-                    .to_owned(),
-            )
-            .await?;
-
-        // DIRECTORS
-        manager
-            .create_table(
-                Table::create()
-                    .table(Directors::Table)
-                    .if_not_exists()
-                    .col(
-                        ColumnDef::new(Directors::Id)
-                            .string()
-                            .not_null()
-                            .primary_key(),
-                    )
-                    .col(ColumnDef::new(Directors::Name).string().not_null())
-                    .col(ColumnDef::new(Directors::Biography).string().null())
-                    .col(ColumnDef::new(Directors::BirthDate).date_time().null())
-                    .col(ColumnDef::new(Directors::ProfilePictureUrl).string().null())
-                    .col(ColumnDef::new(Directors::CreatedAt).date_time().not_null())
-                    .to_owned(),
-            )
-            .await?;
-
-        // VIDEO_CATEGORIES
-        manager
-            .create_table(
-                Table::create()
-                    .table(VideoCategories::Table)
-                    .if_not_exists()
-                    .col(
-                        ColumnDef::new(VideoCategories::Id)
-                            .string()
-                            .not_null()
-                            .primary_key(),
-                    )
-                    .col(ColumnDef::new(VideoCategories::VideoId).string().not_null())
-                    .col(
-                        ColumnDef::new(VideoCategories::CategoryId)
-                            .string()
-                            .not_null(),
-                    )
-                    .col(
-                        ColumnDef::new(VideoCategories::CreatedAt)
-                            .date_time()
-                            .not_null(),
-                    )
-                    .to_owned(),
-            )
-            .await?;
-
-        // VIDEO_ACTORS
-        manager
-            .create_table(
-                Table::create()
-                    .table(VideoActors::Table)
-                    .if_not_exists()
-                    .col(
-                        ColumnDef::new(VideoActors::Id)
-                            .string()
-                            .not_null()
-                            .primary_key(),
-                    )
-                    .col(ColumnDef::new(VideoActors::VideoId).string().not_null())
-                    .col(ColumnDef::new(VideoActors::ActorId).string().not_null())
-                    .col(ColumnDef::new(VideoActors::RoleName).string().null())
-                    .col(ColumnDef::new(VideoActors::IsLead).boolean().not_null())
-                    .col(
-                        ColumnDef::new(VideoActors::CreatedAt)
-                            .date_time()
-                            .not_null(),
-                    )
-                    .to_owned(),
-            )
-            .await?;
-
-        // VIDEO_DIRECTORS
-        manager
-            .create_table(
-                Table::create()
-                    .table(VideoDirectors::Table)
-                    .if_not_exists()
-                    .col(
-                        ColumnDef::new(VideoDirectors::Id)
-                            .string()
-                            .not_null()
-                            .primary_key(),
-                    )
-                    .col(ColumnDef::new(VideoDirectors::VideoId).string().not_null())
-                    .col(
-                        ColumnDef::new(VideoDirectors::DirectorId)
-                            .string()
-                            .not_null(),
-                    )
-                    .col(
-                        ColumnDef::new(VideoDirectors::CreatedAt)
-                            .date_time()
-                            .not_null(),
-                    )
-                    .to_owned(),
-            )
-            .await?;
-
         // ACCESS_GROUPS
         manager
             .create_table(
@@ -198,9 +45,15 @@ impl MigrationTrait for Migration {
                         ColumnDef::new(AccessGroups::Id)
                             .integer()
                             .not_null()
+                            .auto_increment()
                             .primary_key(),
                     )
-                    .col(ColumnDef::new(AccessGroups::Name).string().not_null())
+                    .col(
+                        ColumnDef::new(AccessGroups::Name)
+                            .string()
+                            .not_null()
+                            .unique_key(),
+                    )
                     .col(ColumnDef::new(AccessGroups::Description).string().null())
                     .col(ColumnDef::new(AccessGroups::Permissions).string().null())
                     .col(
@@ -220,8 +73,9 @@ impl MigrationTrait for Migration {
                     .if_not_exists()
                     .col(
                         ColumnDef::new(UsersAccessGroups::Id)
-                            .string()
+                            .integer()
                             .not_null()
+                            .auto_increment()
                             .primary_key(),
                     )
                     .col(
@@ -248,6 +102,215 @@ impl MigrationTrait for Migration {
             )
             .await?;
 
+        // CATEGORIES
+        manager
+            .create_table(
+                Table::create()
+                    .table(Categories::Table)
+                    .if_not_exists()
+                    .col(
+                        ColumnDef::new(Categories::Id)
+                            .integer()
+                            .not_null()
+                            .auto_increment()
+                            .primary_key(),
+                    )
+                    .col(
+                        ColumnDef::new(Categories::Name)
+                            .string()
+                            .not_null()
+                            .unique_key(),
+                    )
+                    .col(ColumnDef::new(Categories::Description).string().null())
+                    .col(ColumnDef::new(Categories::CreatedAt).date_time().not_null())
+                    .to_owned(),
+            )
+            .await?;
+
+        // SERIES
+        manager
+            .create_table(
+                Table::create()
+                    .table(Series::Table)
+                    .if_not_exists()
+                    .col(
+                        ColumnDef::new(Series::Id)
+                            .integer()
+                            .not_null()
+                            .auto_increment()
+                            .primary_key(),
+                    )
+                    .col(ColumnDef::new(Series::Title).string().not_null())
+                    .col(ColumnDef::new(Series::Description).string().null())
+                    .col(ColumnDef::new(Series::ReleaseYear).integer().null())
+                    .col(ColumnDef::new(Series::ThumbnailUrl).string().null())
+                    .col(ColumnDef::new(Series::IsFeatured).boolean().not_null())
+                    .col(ColumnDef::new(Series::CreatedAt).date_time().not_null())
+                    .col(ColumnDef::new(Series::UpdatedAt).date_time().not_null())
+                    .to_owned(),
+            )
+            .await?;
+
+        // VIDEOS (MOVIES & EPISODES)
+        manager
+            .create_table(
+                Table::create()
+                    .table(Videos::Table)
+                    .if_not_exists()
+                    .col(
+                        ColumnDef::new(Videos::Id)
+                            .integer()
+                            .not_null()
+                            .auto_increment()
+                            .primary_key(),
+                    )
+                    .col(ColumnDef::new(Videos::Title).string().not_null())
+                    .col(ColumnDef::new(Videos::Description).string().null())
+                    .col(ColumnDef::new(Videos::DurationSeconds).integer().not_null())
+                    .col(ColumnDef::new(Videos::VideoUrl).string().null())
+                    .col(ColumnDef::new(Videos::TrailerUrl).string().null())
+                    .col(ColumnDef::new(Videos::IsAvailable).boolean().not_null())
+                    .col(ColumnDef::new(Videos::Rating).double().not_null())
+                    .col(ColumnDef::new(Videos::SeriesId).integer().null())
+                    .col(ColumnDef::new(Videos::EpisodeNumber).integer().null())
+                    .col(ColumnDef::new(Videos::SeasonNumber).integer().null())
+                    .col(ColumnDef::new(Videos::ReleaseYear).integer().null())
+                    .col(ColumnDef::new(Videos::CreatedAt).date_time().not_null())
+                    .col(ColumnDef::new(Videos::UpdatedAt).date_time().not_null())
+                    .to_owned(),
+            )
+            .await?;
+
+        // ACTORS
+        manager
+            .create_table(
+                Table::create()
+                    .table(Actors::Table)
+                    .if_not_exists()
+                    .col(
+                        ColumnDef::new(Actors::Id)
+                            .integer()
+                            .not_null()
+                            .auto_increment()
+                            .primary_key(),
+                    )
+                    .col(ColumnDef::new(Actors::Name).string().not_null())
+                    .col(ColumnDef::new(Actors::Biography).string().null())
+                    .col(ColumnDef::new(Actors::BirthDate).date_time().null())
+                    .col(ColumnDef::new(Actors::ProfilePictureUrl).string().null())
+                    .col(ColumnDef::new(Actors::CreatedAt).date_time().not_null())
+                    .to_owned(),
+            )
+            .await?;
+
+        // DIRECTORS
+        manager
+            .create_table(
+                Table::create()
+                    .table(Directors::Table)
+                    .if_not_exists()
+                    .col(
+                        ColumnDef::new(Directors::Id)
+                            .integer()
+                            .not_null()
+                            .auto_increment()
+                            .primary_key(),
+                    )
+                    .col(ColumnDef::new(Directors::Name).string().not_null())
+                    .col(ColumnDef::new(Directors::Biography).string().null())
+                    .col(ColumnDef::new(Directors::BirthDate).date_time().null())
+                    .col(ColumnDef::new(Directors::ProfilePictureUrl).string().null())
+                    .col(ColumnDef::new(Directors::CreatedAt).date_time().not_null())
+                    .to_owned(),
+            )
+            .await?;
+
+        // VIDEO_CATEGORIES
+        manager
+            .create_table(
+                Table::create()
+                    .table(VideoCategories::Table)
+                    .if_not_exists()
+                    .col(
+                        ColumnDef::new(VideoCategories::Id)
+                            .integer()
+                            .not_null()
+                            .auto_increment()
+                            .primary_key(),
+                    )
+                    .col(
+                        ColumnDef::new(VideoCategories::VideoId)
+                            .integer()
+                            .not_null(),
+                    )
+                    .col(
+                        ColumnDef::new(VideoCategories::CategoryId)
+                            .integer()
+                            .not_null(),
+                    )
+                    .col(
+                        ColumnDef::new(VideoCategories::CreatedAt)
+                            .date_time()
+                            .not_null(),
+                    )
+                    .to_owned(),
+            )
+            .await?;
+
+        // VIDEO_ACTORS
+        manager
+            .create_table(
+                Table::create()
+                    .table(VideoActors::Table)
+                    .if_not_exists()
+                    .col(
+                        ColumnDef::new(VideoActors::Id)
+                            .integer()
+                            .not_null()
+                            .auto_increment()
+                            .primary_key(),
+                    )
+                    .col(ColumnDef::new(VideoActors::VideoId).integer().not_null())
+                    .col(ColumnDef::new(VideoActors::ActorId).integer().not_null())
+                    .col(ColumnDef::new(VideoActors::RoleName).string().null())
+                    .col(ColumnDef::new(VideoActors::IsLead).boolean().not_null())
+                    .col(
+                        ColumnDef::new(VideoActors::CreatedAt)
+                            .date_time()
+                            .not_null(),
+                    )
+                    .to_owned(),
+            )
+            .await?;
+
+        // VIDEO_DIRECTORS
+        manager
+            .create_table(
+                Table::create()
+                    .table(VideoDirectors::Table)
+                    .if_not_exists()
+                    .col(
+                        ColumnDef::new(VideoDirectors::Id)
+                            .integer()
+                            .not_null()
+                            .auto_increment()
+                            .primary_key(),
+                    )
+                    .col(ColumnDef::new(VideoDirectors::VideoId).integer().not_null())
+                    .col(
+                        ColumnDef::new(VideoDirectors::DirectorId)
+                            .integer()
+                            .not_null(),
+                    )
+                    .col(
+                        ColumnDef::new(VideoDirectors::CreatedAt)
+                            .date_time()
+                            .not_null(),
+                    )
+                    .to_owned(),
+            )
+            .await?;
+
         // WATCH_HISTORY
         manager
             .create_table(
@@ -256,12 +319,13 @@ impl MigrationTrait for Migration {
                     .if_not_exists()
                     .col(
                         ColumnDef::new(WatchHistory::Id)
-                            .string()
+                            .integer()
                             .not_null()
+                            .auto_increment()
                             .primary_key(),
                     )
                     .col(ColumnDef::new(WatchHistory::UserId).string().not_null())
-                    .col(ColumnDef::new(WatchHistory::VideoId).string().not_null())
+                    .col(ColumnDef::new(WatchHistory::VideoId).integer().not_null())
                     .col(
                         ColumnDef::new(WatchHistory::WatchedSeconds)
                             .integer()
@@ -294,12 +358,13 @@ impl MigrationTrait for Migration {
                     .if_not_exists()
                     .col(
                         ColumnDef::new(Favorites::Id)
-                            .string()
+                            .integer()
                             .not_null()
+                            .auto_increment()
                             .primary_key(),
                     )
                     .col(ColumnDef::new(Favorites::UserId).string().not_null())
-                    .col(ColumnDef::new(Favorites::VideoId).string().not_null())
+                    .col(ColumnDef::new(Favorites::VideoId).integer().not_null())
                     .col(ColumnDef::new(Favorites::AddedAt).date_time().not_null())
                     .to_owned(),
             )
@@ -313,12 +378,13 @@ impl MigrationTrait for Migration {
                     .if_not_exists()
                     .col(
                         ColumnDef::new(Ratings::Id)
-                            .string()
+                            .integer()
                             .not_null()
+                            .auto_increment()
                             .primary_key(),
                     )
                     .col(ColumnDef::new(Ratings::UserId).string().not_null())
-                    .col(ColumnDef::new(Ratings::VideoId).string().not_null())
+                    .col(ColumnDef::new(Ratings::VideoId).integer().not_null())
                     .col(ColumnDef::new(Ratings::Rating).integer().not_null())
                     .col(ColumnDef::new(Ratings::Comment).string().null())
                     .col(ColumnDef::new(Ratings::CreatedAt).date_time().not_null())
@@ -327,10 +393,296 @@ impl MigrationTrait for Migration {
             )
             .await?;
 
+        // Foreign keys
+
+        manager
+            .create_foreign_key(
+                ForeignKey::create()
+                    .name("fk-videos-series_id")
+                    .from_tbl(Videos::Table)
+                    .from_col(Videos::SeriesId)
+                    .to_tbl(Series::Table)
+                    .to_col(Series::Id)
+                    .on_delete(ForeignKeyAction::SetNull)
+                    .to_owned(),
+            )
+            .await?;
+
+        manager
+            .create_foreign_key(
+                ForeignKey::create()
+                    .name("fk-video_categories-video_id")
+                    .from_tbl(VideoCategories::Table)
+                    .from_col(VideoCategories::VideoId)
+                    .to_tbl(Videos::Table)
+                    .to_col(Videos::Id)
+                    .on_delete(ForeignKeyAction::Cascade)
+                    .to_owned(),
+            )
+            .await?;
+
+        manager
+            .create_foreign_key(
+                ForeignKey::create()
+                    .name("fk-video_categories-category_id")
+                    .from_tbl(VideoCategories::Table)
+                    .from_col(VideoCategories::CategoryId)
+                    .to_tbl(Categories::Table)
+                    .to_col(Categories::Id)
+                    .on_delete(ForeignKeyAction::Cascade)
+                    .to_owned(),
+            )
+            .await?;
+
+        manager
+            .create_foreign_key(
+                ForeignKey::create()
+                    .name("fk-video_actors-video_id")
+                    .from_tbl(VideoActors::Table)
+                    .from_col(VideoActors::VideoId)
+                    .to_tbl(Videos::Table)
+                    .to_col(Videos::Id)
+                    .on_delete(ForeignKeyAction::Cascade)
+                    .to_owned(),
+            )
+            .await?;
+
+        manager
+            .create_foreign_key(
+                ForeignKey::create()
+                    .name("fk-video_actors-actor_id")
+                    .from_tbl(VideoActors::Table)
+                    .from_col(VideoActors::ActorId)
+                    .to_tbl(Actors::Table)
+                    .to_col(Actors::Id)
+                    .on_delete(ForeignKeyAction::Cascade)
+                    .to_owned(),
+            )
+            .await?;
+
+        manager
+            .create_foreign_key(
+                ForeignKey::create()
+                    .name("fk-video_directors-video_id")
+                    .from_tbl(VideoDirectors::Table)
+                    .from_col(VideoDirectors::VideoId)
+                    .to_tbl(Videos::Table)
+                    .to_col(Videos::Id)
+                    .on_delete(ForeignKeyAction::Cascade)
+                    .to_owned(),
+            )
+            .await?;
+
+        manager
+            .create_foreign_key(
+                ForeignKey::create()
+                    .name("fk-video_directors-director_id")
+                    .from_tbl(VideoDirectors::Table)
+                    .from_col(VideoDirectors::DirectorId)
+                    .to_tbl(Directors::Table)
+                    .to_col(Directors::Id)
+                    .on_delete(ForeignKeyAction::Cascade)
+                    .to_owned(),
+            )
+            .await?;
+
+        manager
+            .create_foreign_key(
+                ForeignKey::create()
+                    .name("fk-watch_history-user_id")
+                    .from_tbl(WatchHistory::Table)
+                    .from_col(WatchHistory::UserId)
+                    .to_tbl(Users::Table)
+                    .to_col(Users::Id)
+                    .on_delete(ForeignKeyAction::Cascade)
+                    .to_owned(),
+            )
+            .await?;
+
+        manager
+            .create_foreign_key(
+                ForeignKey::create()
+                    .name("fk-watch_history-video_id")
+                    .from_tbl(WatchHistory::Table)
+                    .from_col(WatchHistory::VideoId)
+                    .to_tbl(Videos::Table)
+                    .to_col(Videos::Id)
+                    .on_delete(ForeignKeyAction::Cascade)
+                    .to_owned(),
+            )
+            .await?;
+
+        manager
+            .create_foreign_key(
+                ForeignKey::create()
+                    .name("fk-favorites-user_id")
+                    .from_tbl(Favorites::Table)
+                    .from_col(Favorites::UserId)
+                    .to_tbl(Users::Table)
+                    .to_col(Users::Id)
+                    .on_delete(ForeignKeyAction::Cascade)
+                    .to_owned(),
+            )
+            .await?;
+
+        manager
+            .create_foreign_key(
+                ForeignKey::create()
+                    .name("fk-favorites-video_id")
+                    .from_tbl(Favorites::Table)
+                    .from_col(Favorites::VideoId)
+                    .to_tbl(Videos::Table)
+                    .to_col(Videos::Id)
+                    .on_delete(ForeignKeyAction::Cascade)
+                    .to_owned(),
+            )
+            .await?;
+
+        manager
+            .create_foreign_key(
+                ForeignKey::create()
+                    .name("fk-ratings-user_id")
+                    .from_tbl(Ratings::Table)
+                    .from_col(Ratings::UserId)
+                    .to_tbl(Users::Table)
+                    .to_col(Users::Id)
+                    .on_delete(ForeignKeyAction::Cascade)
+                    .to_owned(),
+            )
+            .await?;
+
+        manager
+            .create_foreign_key(
+                ForeignKey::create()
+                    .name("fk-ratings-video_id")
+                    .from_tbl(Ratings::Table)
+                    .from_col(Ratings::VideoId)
+                    .to_tbl(Videos::Table)
+                    .to_col(Videos::Id)
+                    .on_delete(ForeignKeyAction::Cascade)
+                    .to_owned(),
+            )
+            .await?;
+
+        // ADDED FOREIGN KEY FOR USERS_ACCESS_GROUPS
+        manager
+            .create_foreign_key(
+                ForeignKey::create()
+                    .name("fk-users_access_groups-user_id")
+                    .from_tbl(UsersAccessGroups::Table)
+                    .from_col(UsersAccessGroups::UserId)
+                    .to_tbl(Users::Table)
+                    .to_col(Users::Id)
+                    .on_delete(ForeignKeyAction::Cascade)
+                    .to_owned(),
+            )
+            .await?;
+
+        manager
+            .create_foreign_key(
+                ForeignKey::create()
+                    .name("fk-users_access_groups-access_group_id")
+                    .from_tbl(UsersAccessGroups::Table)
+                    .from_col(UsersAccessGroups::AccessGroupId)
+                    .to_tbl(AccessGroups::Table)
+                    .to_col(AccessGroups::Id)
+                    .on_delete(ForeignKeyAction::Cascade)
+                    .to_owned(),
+            )
+            .await?;
+
         Ok(())
     }
 
     async fn down(&self, manager: &SchemaManager) -> Result<(), DbErr> {
+        // Drop foreign keys first to avoid dependency errors
+        manager
+            .drop_foreign_key(ForeignKey::drop().name("fk-ratings-video_id").to_owned())
+            .await?;
+        manager
+            .drop_foreign_key(ForeignKey::drop().name("fk-ratings-user_id").to_owned())
+            .await?;
+        manager
+            .drop_foreign_key(ForeignKey::drop().name("fk-favorites-video_id").to_owned())
+            .await?;
+        manager
+            .drop_foreign_key(ForeignKey::drop().name("fk-favorites-user_id").to_owned())
+            .await?;
+        manager
+            .drop_foreign_key(
+                ForeignKey::drop()
+                    .name("fk-watch_history-video_id")
+                    .to_owned(),
+            )
+            .await?;
+        manager
+            .drop_foreign_key(
+                ForeignKey::drop()
+                    .name("fk-watch_history-user_id")
+                    .to_owned(),
+            )
+            .await?;
+        manager
+            .drop_foreign_key(
+                ForeignKey::drop()
+                    .name("fk-video_directors-director_id")
+                    .to_owned(),
+            )
+            .await?;
+        manager
+            .drop_foreign_key(
+                ForeignKey::drop()
+                    .name("fk-video_directors-video_id")
+                    .to_owned(),
+            )
+            .await?;
+        manager
+            .drop_foreign_key(
+                ForeignKey::drop()
+                    .name("fk-video_actors-actor_id")
+                    .to_owned(),
+            )
+            .await?;
+        manager
+            .drop_foreign_key(
+                ForeignKey::drop()
+                    .name("fk-video_actors-video_id")
+                    .to_owned(),
+            )
+            .await?;
+        manager
+            .drop_foreign_key(
+                ForeignKey::drop()
+                    .name("fk-video_categories-category_id")
+                    .to_owned(),
+            )
+            .await?;
+        manager
+            .drop_foreign_key(
+                ForeignKey::drop()
+                    .name("fk-video_categories-video_id")
+                    .to_owned(),
+            )
+            .await?;
+        manager
+            .drop_foreign_key(ForeignKey::drop().name("fk-videos-series_id").to_owned())
+            .await?;
+        manager
+            .drop_foreign_key(
+                ForeignKey::drop()
+                    .name("fk-users_access_groups-access_group_id")
+                    .to_owned(),
+            )
+            .await?;
+        manager
+            .drop_foreign_key(
+                ForeignKey::drop()
+                    .name("fk-users_access_groups-user_id")
+                    .to_owned(),
+            )
+            .await?;
+
+        // Drop tables
         manager
             .drop_table(Table::drop().table(Ratings::Table).to_owned())
             .await?;
@@ -339,12 +691,6 @@ impl MigrationTrait for Migration {
             .await?;
         manager
             .drop_table(Table::drop().table(WatchHistory::Table).to_owned())
-            .await?;
-        manager
-            .drop_table(Table::drop().table(UsersAccessGroups::Table).to_owned())
-            .await?;
-        manager
-            .drop_table(Table::drop().table(AccessGroups::Table).to_owned())
             .await?;
         manager
             .drop_table(Table::drop().table(VideoDirectors::Table).to_owned())
@@ -365,16 +711,26 @@ impl MigrationTrait for Migration {
             .drop_table(Table::drop().table(Videos::Table).to_owned())
             .await?;
         manager
+            .drop_table(Table::drop().table(Series::Table).to_owned())
+            .await?;
+        manager
             .drop_table(Table::drop().table(Categories::Table).to_owned())
+            .await?;
+        manager
+            .drop_table(Table::drop().table(UsersAccessGroups::Table).to_owned())
+            .await?;
+        manager
+            .drop_table(Table::drop().table(AccessGroups::Table).to_owned())
             .await?;
         manager
             .drop_table(Table::drop().table(Users::Table).to_owned())
             .await?;
+
         Ok(())
     }
 }
 
-// Idents (um enum para cada tabela)
+// Idents
 #[derive(Iden)]
 pub enum Users {
     Table,
@@ -391,6 +747,26 @@ pub enum Users {
 }
 
 #[derive(Iden)]
+pub enum AccessGroups {
+    Table,
+    Id,
+    Name,
+    Description,
+    Permissions,
+    CreatedAt,
+}
+
+#[derive(Iden)]
+pub enum UsersAccessGroups {
+    Table,
+    Id,
+    UserId,
+    AccessGroupId,
+    AssignedAt,
+    AssignedBy,
+}
+
+#[derive(Iden)]
 pub enum Categories {
     Table,
     Id,
@@ -400,19 +776,33 @@ pub enum Categories {
 }
 
 #[derive(Iden)]
+pub enum Series {
+    Table,
+    Id,
+    Title,
+    Description,
+    ReleaseYear,
+    ThumbnailUrl,
+    IsFeatured,
+    CreatedAt,
+    UpdatedAt,
+}
+
+#[derive(Iden)]
 pub enum Videos {
     Table,
     Id,
     Title,
     Description,
     DurationSeconds,
-    ReleaseYear,
-    Rating,
-    ThumbnailUrl,
     VideoUrl,
     TrailerUrl,
-    IsFeatured,
     IsAvailable,
+    Rating,
+    SeriesId,
+    EpisodeNumber,
+    SeasonNumber,
+    ReleaseYear,
     CreatedAt,
     UpdatedAt,
 }
@@ -466,26 +856,6 @@ pub enum VideoDirectors {
     VideoId,
     DirectorId,
     CreatedAt,
-}
-
-#[derive(Iden)]
-pub enum AccessGroups {
-    Table,
-    Id,
-    Name,
-    Description,
-    Permissions,
-    CreatedAt,
-}
-
-#[derive(Iden)]
-pub enum UsersAccessGroups {
-    Table,
-    Id,
-    UserId,
-    AccessGroupId,
-    AssignedAt,
-    AssignedBy,
 }
 
 #[derive(Iden)]

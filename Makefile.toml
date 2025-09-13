@@ -37,3 +37,8 @@ description = "Starts the viewer_api"
 command = "cargo"
 args = ["run", "--package", "viewer_api"]
 detached = true
+
+[tasks.generate-schema]
+description = "Gera os entities do SeaORM"
+command = "sea-orm-cli"
+args = ["generate", "entity", "-o", "shared/src/modules/database/schema"]

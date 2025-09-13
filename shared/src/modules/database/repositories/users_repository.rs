@@ -8,8 +8,7 @@ use sea_orm::{
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-use crate::modules::database::schema::users;
-use crate::modules::database::schema::users_access_groups;
+use crate::modules::database::schema::*;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct LoginRequest {
@@ -90,9 +89,9 @@ impl UsersRepository {
             email: Set(request.email.clone()),
             name: Set(request.name.clone()),
             password_hash: Set(request.password_hash.clone()),
-            created_at: Set(Some(now)),
+            created_at: Set(now),
             role: Set("test".to_string()),
-            updated_at: Set(Some(now)),
+            updated_at: Set(now),
             profile_picture_url: Set(None),
             subscription_status: Set(None),
             subscription_expires_at: Set(None),
@@ -102,10 +101,10 @@ impl UsersRepository {
 
         for group_id in &request.access_group_ids {
             users_access_groups::ActiveModel {
-                id: Set(Uuid::new_v4().to_string()),
+                id: sea_orm::ActiveValue::NotSet,
                 user_id: Set(user.id.clone()),
                 access_group_id: Set(*group_id),
-                assigned_at: Set(Some(now)),
+                assigned_at: Set(now),
                 assigned_by: Set(None),
             }
             .insert(&txn)
