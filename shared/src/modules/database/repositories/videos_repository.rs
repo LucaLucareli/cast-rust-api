@@ -47,7 +47,7 @@ impl VideosRepository {
     pub async fn create(&self, request: CreateVideoRequest) -> Result<VideoModel, DbErr> {
         let now = Utc::now().naive_utc();
         let video = videos::ActiveModel {
-            id: Set(Default::default()),
+            id: sea_orm::ActiveValue::NotSet,
             title: Set(request.title),
             description: Set(request.description),
             duration_seconds: Set(request.duration_seconds),

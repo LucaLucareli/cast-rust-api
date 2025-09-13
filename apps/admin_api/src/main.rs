@@ -38,6 +38,7 @@ async fn main() -> anyhow::Result<()> {
     tracing::info!("Admin API iniciando em http://{}", addr);
     tracing::info!("Endpoints disponíveis:");
     tracing::info!("   - POST  /admin/video");
+    tracing::info!("   - POST  /admin/serie");
 
     // TCP socket
     let socket = Socket::new(Domain::IPV4, Type::STREAM, Some(Protocol::TCP))?;
