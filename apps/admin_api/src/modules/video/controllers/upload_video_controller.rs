@@ -1,5 +1,7 @@
 use crate::app_state::AppState;
+use crate::modules::video::dto::route_params::upload_video_route_params_dto::UploadVideoRouteParamsDTO;
 use crate::modules::video::services::upload_video_service;
+use axum::extract::Path;
 use axum::{extract::Multipart, http::StatusCode, Extension, Json};
 use macros::require_access;
 use serde_json::json;
@@ -14,23 +16,34 @@ use std::sync::Arc;
 pub async fn handler(
     Extension(state): Extension<Arc<AppState>>,
     AuthenticatedUser(user): AuthenticatedUser,
+    Path(params): Path<UploadVideoRouteParamsDTO>,
     multipart: Multipart,
 ) -> Result<Json<ResponseInterface<String>>, (StatusCode, Json<ValidationErrorResponse>)> {
-    let result = upload_video_service::execute(multipart, state).await;
-
-    match result {
+    match upload_video_service::execute(multipart, params, state).await {
         Ok(()) => Ok(Json(ResponseInterface {
             result: Some("Upload feito com sucesso!".to_string()),
             message: Some("Upload processado com sucesso!".to_string()),
         })),
-        Err(e) => {
-            return Err((
-                StatusCode::INTERNAL_SERVER_ERROR,
+        Err(err) => {
+            let (status, msg) = match err {
+                upload_video_service::UploadVideoError::Validation(msg) => {
+                    (StatusCode::BAD_REQUEST, msg)
+                }
+                upload_video_service::UploadVideoError::Database(msg) => {
+                    (StatusCode::INTERNAL_SERVER_ERROR, msg)
+                }
+                upload_video_service::UploadVideoError::NotFound(msg) => {
+                    (StatusCode::NOT_FOUND, msg)
+                }
+            };
+
+            Err((
+                status,
                 Json(ValidationErrorResponse {
                     message: "Erro ao processar upload".to_string(),
-                    errors: json!([format!("Erro ao salvar arquivo: {:?}", e)]),
+                    errors: json!([msg]),
                 }),
-            ));
+            ))
         }
     }
 }

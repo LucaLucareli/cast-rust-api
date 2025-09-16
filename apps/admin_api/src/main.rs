@@ -39,7 +39,7 @@ async fn main() -> anyhow::Result<()> {
     tracing::info!("Endpoints disponíveis:");
     tracing::info!("   - POST  /admin/serie");
     tracing::info!("   - POST  /admin/video");
-    tracing::info!("   - POST  /admin/video/upload");
+    tracing::info!("   - POST  /admin/video/upload/:id");
 
     // TCP socket
     let socket = Socket::new(Domain::IPV4, Type::STREAM, Some(Protocol::TCP))?;

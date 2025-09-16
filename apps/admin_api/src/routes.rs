@@ -8,7 +8,7 @@ pub fn create_router() -> Router {
             "/video",
             Router::new()
                 .route("/", post(create_video_controller::handler))
-                .route("/upload", post(upload_video_controller::handler)),
+                .route("/upload/{id}", post(upload_video_controller::handler)),
         )
         .nest(
             "/serie",

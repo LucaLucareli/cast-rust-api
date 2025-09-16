@@ -2,7 +2,7 @@ use serde::Deserialize;
 use validator::Validate;
 
 #[derive(Debug, Deserialize, Validate, Default)]
-pub struct CreateVideoInputDTO {
+pub struct CreateVideoRequestDTO {
     #[validate(length(min = 3, message = "O título deve ter pelo menos 3 caracteres"))]
     pub title: String,
 

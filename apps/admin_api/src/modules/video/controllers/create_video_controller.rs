@@ -1,6 +1,7 @@
 use crate::app_state::AppState;
-use crate::modules::video::dto::create_video_input_dto::CreateVideoInputDTO;
-use crate::modules::video::dto::create_video_output_dto::CreateVideoOutputDTO;
+use crate::modules::video::dto::io::create_video_input_dto::CreateVideoInputDTO;
+use crate::modules::video::dto::io::create_video_output_dto::CreateVideoOutputDTO;
+use crate::modules::video::dto::request::create_video_request_dto::CreateVideoRequestDTO;
 use crate::modules::video::services::create_video_service;
 use axum::{http::StatusCode, Extension, Json};
 use macros::require_access;
@@ -18,14 +19,16 @@ use std::sync::Arc;
 pub async fn handler(
     Extension(state): Extension<Arc<AppState>>,
     AuthenticatedUser(user): AuthenticatedUser,
-    payload: Json<CreateVideoInputDTO>,
+    payload: Json<CreateVideoRequestDTO>,
 ) -> Result<
     (StatusCode, Json<ResponseInterface<CreateVideoOutputDTO>>),
     (StatusCode, Json<ValidationErrorResponse>),
 > {
     let ValidatedJson(payload) = validate_json(payload).await?;
 
-    match create_video_service::execute(payload, state).await {
+    let input: CreateVideoInputDTO = payload.into();
+
+    match create_video_service::execute(input, state).await {
         Ok(id) => Ok((
             StatusCode::CREATED,
             Json(ResponseInterface {

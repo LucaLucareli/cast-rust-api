@@ -1,5 +1,5 @@
-use crate::modules::video::dto::create_video_input_dto::CreateVideoInputDTO;
-use crate::modules::video::dto::create_video_output_dto::CreateVideoOutputDTO;
+use crate::modules::video::dto::io::create_video_input_dto::CreateVideoInputDTO;
+use crate::modules::video::dto::io::create_video_output_dto::CreateVideoOutputDTO;
 use crate::AppState;
 use shared::modules::database::repositories::videos_repository::CreateVideoRequest;
 use shared::modules::validation::validate_release_year::validate_release_year;

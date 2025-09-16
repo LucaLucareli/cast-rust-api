@@ -1,28 +1,35 @@
 use crate::app_state::AppState;
-use axum::{extract::Multipart, http::StatusCode, Json};
+use crate::modules::video::dto::route_params::upload_video_route_params_dto::UploadVideoRouteParamsDTO;
+use axum::extract::Multipart;
 use futures::StreamExt;
 use futures::TryStreamExt;
-use serde_json::json;
-use shared::modules::validation::validation_layer::ValidationErrorResponse;
+use shared::modules::database::repositories::videos_repository::UpdateVideoRequest;
 use std::sync::Arc;
 use tokio_util::io::StreamReader;
 
+pub enum UploadVideoError {
+    Validation(String),
+    Database(String),
+    NotFound(String),
+}
+
 pub async fn execute(
     mut multipart: Multipart,
+    params: UploadVideoRouteParamsDTO,
     state: Arc<AppState>,
-) -> Result<(), (StatusCode, Json<ValidationErrorResponse>)> {
-    while let Some(field) = match multipart.next_field().await {
-        Ok(f) => f,
-        Err(e) => {
-            return Err((
-                StatusCode::BAD_REQUEST,
-                Json(ValidationErrorResponse {
-                    message: "Erro ao processar campo multipart".to_string(),
-                    errors: json!([format!("{}", e)]),
-                }),
-            ));
-        }
-    } {
+) -> Result<(), UploadVideoError> {
+    let video = state
+        .video_repo
+        .find_by_id(params.id)
+        .await
+        .map_err(|e| UploadVideoError::Database(format!("Erro ao buscar vídeo: {}", e)))?
+        .ok_or_else(|| {
+            UploadVideoError::NotFound(format!("Vídeo com id {} não encontrado", params.id))
+        })?;
+
+    while let Some(field) = multipart.next_field().await.map_err(|e| {
+        UploadVideoError::Validation(format!("Erro ao processar campo multipart: {}", e))
+    })? {
         let file_name = field.file_name().unwrap_or("upload.bin").to_string();
         let content_type = field
             .content_type()
@@ -32,30 +39,38 @@ pub async fn execute(
         let stream = field
             .into_stream()
             .map(|res| res.map_err(std::io::Error::other));
-
         let reader = StreamReader::new(stream);
 
         let max_file_size = 50 * 1024 * 1024;
         let storage = state.video_storage_service.clone();
 
-        let result = storage
+        let (blob_url, _size) = storage
             .save_video_file(reader, &file_name, &content_type, max_file_size)
-            .await;
+            .await
+            .map_err(|e| UploadVideoError::Database(format!("Erro ao salvar arquivo: {}", e)))?;
 
-        match result {
-            Ok((blob_url, size)) => {
-                println!("Arquivo salvo: {}, tamanho {}", blob_url, size);
-            }
-            Err(e) => {
-                return Err((
-                    StatusCode::INTERNAL_SERVER_ERROR,
-                    Json(ValidationErrorResponse {
-                        message: "Erro ao processar upload".to_string(),
-                        errors: json!([format!("Erro ao salvar arquivo: {}", e)]),
-                    }),
-                ));
-            }
-        }
+        state
+            .video_repo
+            .update(
+                video.id,
+                UpdateVideoRequest {
+                    video_url: Some(blob_url),
+                    title: None,
+                    description: None,
+                    duration_seconds: None,
+                    release_year: None,
+                    rating: None,
+                    trailer_url: None,
+                    is_available: None,
+                    series_id: None,
+                    episode_number: None,
+                    season_number: None,
+                },
+            )
+            .await
+            .map_err(|e| {
+                UploadVideoError::Database(format!("Erro ao atualizar vídeo no banco: {}", e))
+            })?;
     }
 
     Ok(())
