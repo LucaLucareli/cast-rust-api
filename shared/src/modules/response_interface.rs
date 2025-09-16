@@ -1,3 +1,8 @@
+use axum::{
+    http::StatusCode,
+    response::{IntoResponse, Response},
+    Json,
+};
 use serde::Serialize;
 
 #[derive(Serialize)]
@@ -9,11 +14,8 @@ pub struct ResponseInterface<T> {
     pub result: Option<T>,
 }
 
-impl<T> Default for ResponseInterface<T> {
-    fn default() -> Self {
-        Self {
-            message: None,
-            result: None,
-        }
+impl<T: Serialize> IntoResponse for ResponseInterface<T> {
+    fn into_response(self) -> Response {
+        (StatusCode::OK, Json(self)).into_response()
     }
 }

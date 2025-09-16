@@ -405,6 +405,7 @@ dependencies = [
  "chrono",
  "dotenvy",
  "hyper 0.14.32",
+ "macros",
  "redis",
  "sea-orm 0.12.15",
  "sea-orm-cli 0.12.15",

@@ -18,15 +18,20 @@ pub struct ErrorResponse {
 pub async fn handler(
     Extension(state): Extension<Arc<AppState>>,
     payload: Json<RegisterInputDTO>,
-) -> Result<Json<ResponseInterface<RegisterOutputDTO>>, (StatusCode, Json<ValidationErrorResponse>)>
-{
+) -> Result<
+    (StatusCode, Json<ResponseInterface<RegisterOutputDTO>>),
+    (StatusCode, Json<ValidationErrorResponse>),
+> {
     let ValidatedJson(payload) = validate_json(payload).await?;
 
     match crate::modules::auth::services::register_service::execute(payload, state).await {
-        Ok(auth_response) => Ok(Json(ResponseInterface {
-            result: Some(auth_response),
-            message: None,
-        })),
+        Ok(auth_response) => Ok((
+            StatusCode::CREATED,
+            Json(ResponseInterface {
+                result: Some(auth_response),
+                message: None,
+            }),
+        )),
         Err(e) => Err((
             StatusCode::INTERNAL_SERVER_ERROR,
             Json(ValidationErrorResponse {

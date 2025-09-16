@@ -12,8 +12,6 @@ pub struct CreateSerieRequest {
     pub release_year: Option<i32>,
     pub thumbnail_url: Option<String>,
     pub is_featured: bool,
-    pub created_at: DateTime,
-    pub updated_at: DateTime,
 }
 
 pub struct SerieRepository {
@@ -39,5 +37,9 @@ impl SerieRepository {
         };
 
         video.insert(&self.db).await
+    }
+
+    pub async fn find_by_id(&self, serie_id: i32) -> Result<Option<SerieModel>, DbErr> {
+        series::Entity::find_by_id(serie_id).one(&self.db).await
     }
 }

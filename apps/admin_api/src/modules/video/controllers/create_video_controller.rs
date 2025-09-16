@@ -1,7 +1,7 @@
 use crate::app_state::AppState;
-use crate::modules::serie::dto::create_serie_input_dto::CreateSerieInputDTO;
-use crate::modules::serie::dto::create_serie_output_dto::CreateSerieOutputDTO;
-use crate::modules::serie::services::create_serie_service;
+use crate::modules::video::dto::create_video_input_dto::CreateVideoInputDTO;
+use crate::modules::video::dto::create_video_output_dto::CreateVideoOutputDTO;
+use crate::modules::video::services::create_video_service;
 use axum::{http::StatusCode, Extension, Json};
 use macros::require_access;
 use serde_json::json;
@@ -18,34 +18,37 @@ use std::sync::Arc;
 pub async fn handler(
     Extension(state): Extension<Arc<AppState>>,
     AuthenticatedUser(user): AuthenticatedUser,
-    payload: Json<CreateSerieInputDTO>,
+    payload: Json<CreateVideoInputDTO>,
 ) -> Result<
-    (StatusCode, Json<ResponseInterface<CreateSerieOutputDTO>>),
+    (StatusCode, Json<ResponseInterface<CreateVideoOutputDTO>>),
     (StatusCode, Json<ValidationErrorResponse>),
 > {
     let ValidatedJson(payload) = validate_json(payload).await?;
 
-    match create_serie_service::execute(payload, state).await {
+    match create_video_service::execute(payload, state).await {
         Ok(id) => Ok((
             StatusCode::CREATED,
             Json(ResponseInterface {
                 result: Some(id),
-                message: Some("Série criada com sucesso!".to_string()),
+                message: Some("Criada com sucesso!".to_string()),
             }),
         )),
         Err(err) => {
             let (status, msg) = match err {
-                create_serie_service::CreateSerieError::Validation(msg) => {
+                create_video_service::CreateVideoError::Validation(msg) => {
                     (StatusCode::BAD_REQUEST, msg)
                 }
-                create_serie_service::CreateSerieError::Database(msg) => {
+                create_video_service::CreateVideoError::Database(msg) => {
                     (StatusCode::INTERNAL_SERVER_ERROR, msg)
+                }
+                create_video_service::CreateVideoError::NotFound(msg) => {
+                    (StatusCode::NOT_FOUND, msg)
                 }
             };
             Err((
                 status,
                 Json(ValidationErrorResponse {
-                    message: "Erro ao criar série".to_string(),
+                    message: "Erro ao criar".to_string(),
                     errors: json!([msg]),
                 }),
             ))
