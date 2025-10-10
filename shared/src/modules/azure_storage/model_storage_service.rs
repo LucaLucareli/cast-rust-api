@@ -209,6 +209,14 @@ impl StorageService {
         Ok((blob_client.url()?.to_string(), total_bytes))
     }
 
+    pub async fn delete_blob(&self, blob_name: &str) -> Result<()> {
+        let blob_client = self.get_blob_client(blob_name);
+
+        blob_client.delete().into_future().await?;
+
+        Ok(())
+    }
+
     pub async fn get_blob_range(
         &self,
         blob_name: &str,

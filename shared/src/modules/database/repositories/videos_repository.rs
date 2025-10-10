@@ -107,55 +107,50 @@ impl VideosRepository {
         query.all(&self.db).await
     }
 
-    pub async fn update(
-        &self,
-        video_id: i32,
-        request: UpdateVideoRequest,
-    ) -> Result<Option<VideoModel>, DbErr> {
-        if let Some(video) = videos::Entity::find_by_id(video_id).one(&self.db).await? {
-            let mut active_model: videos::ActiveModel = video.into();
+    pub async fn update(&self, video_id: i32, request: UpdateVideoRequest) -> Result<i32, DbErr> {
+        let mut active_model = videos::ActiveModel {
+            id: Set(video_id),
+            updated_at: Set(Utc::now().naive_utc()),
+            ..Default::default()
+        };
 
-            if let Some(title) = request.title {
-                active_model.title = Set(title);
-            }
-            if request.description.is_some() {
-                active_model.description = Set(request.description);
-            }
-            if let Some(duration) = request.duration_seconds {
-                active_model.duration_seconds = Set(duration);
-            }
-            if request.release_year.is_some() {
-                active_model.release_year = Set(request.release_year);
-            }
-            if let Some(rating) = request.rating {
-                active_model.rating = Set(rating);
-            }
-            if request.video_url.is_some() {
-                active_model.video_url = Set(request.video_url);
-            }
-            if request.trailer_url.is_some() {
-                active_model.trailer_url = Set(request.trailer_url);
-            }
-            if let Some(is_available) = request.is_available {
-                active_model.is_available = Set(is_available);
-            }
-            if request.series_id.is_some() {
-                active_model.series_id = Set(request.series_id);
-            }
-            if request.episode_number.is_some() {
-                active_model.episode_number = Set(request.episode_number);
-            }
-            if request.season_number.is_some() {
-                active_model.season_number = Set(request.season_number);
-            }
-
-            active_model.updated_at = Set(Utc::now().naive_utc());
-
-            let updated = active_model.update(&self.db).await?;
-            Ok(Some(updated))
-        } else {
-            Ok(None)
+        if let Some(title) = request.title {
+            active_model.title = Set(title);
         }
+        if request.description.is_some() {
+            active_model.description = Set(request.description);
+        }
+        if let Some(duration) = request.duration_seconds {
+            active_model.duration_seconds = Set(duration);
+        }
+        if request.release_year.is_some() {
+            active_model.release_year = Set(request.release_year);
+        }
+        if let Some(rating) = request.rating {
+            active_model.rating = Set(rating);
+        }
+        if request.video_url.is_some() {
+            active_model.video_url = Set(request.video_url);
+        }
+        if request.trailer_url.is_some() {
+            active_model.trailer_url = Set(request.trailer_url);
+        }
+        if let Some(is_available) = request.is_available {
+            active_model.is_available = Set(is_available);
+        }
+        if request.series_id.is_some() {
+            active_model.series_id = Set(request.series_id);
+        }
+        if request.episode_number.is_some() {
+            active_model.episode_number = Set(request.episode_number);
+        }
+        if request.season_number.is_some() {
+            active_model.season_number = Set(request.season_number);
+        }
+
+        let updated = active_model.update(&self.db).await?;
+
+        Ok(updated.id)
     }
 
     pub async fn delete(&self, video_id: i32) -> Result<bool, DbErr> {

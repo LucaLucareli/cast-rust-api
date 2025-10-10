@@ -36,6 +36,7 @@ impl VideoStorageService {
     pub async fn get_url_to_upload_video(&self, file_name: &str) -> Result<Url> {
         let blob_name = self.generate_video_blob_path(file_name);
         self.storage_service
+            .as_ref()
             .get_signed_url_for_upload(&blob_name)
             .await
     }
@@ -51,6 +52,7 @@ impl VideoStorageService {
 
         let (_blob_url, total_bytes) = self
             .storage_service
+            .as_ref()
             .upload_stream_with_blocks(
                 &mut file,
                 &blob_name,
@@ -76,7 +78,7 @@ impl VideoStorageService {
     }
 
     pub async fn get_blob_video_parsed(&self, blob_name: &str) -> Result<Vec<u8>> {
-        self.storage_service.read_model(blob_name).await
+        self.storage_service.as_ref().read_model(blob_name).await
     }
 
     pub async fn stream_video(
@@ -84,7 +86,7 @@ impl VideoStorageService {
         blob_name: &str,
         range: Option<Range<u64>>,
     ) -> Result<Vec<u8>> {
-        let storage_service = &self.storage_service;
+        let storage_service = self.storage_service.as_ref();
 
         let data = match range {
             Some(r) => storage_service.get_blob_range(blob_name, Some(r)).await?,
@@ -92,5 +94,9 @@ impl VideoStorageService {
         };
 
         Ok(data)
+    }
+
+    pub async fn delete_video(&self, blob_name: &str) -> Result<()> {
+        self.storage_service.as_ref().delete_blob(blob_name).await
     }
 }

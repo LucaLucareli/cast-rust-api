@@ -49,6 +49,14 @@ pub async fn execute(
             .await
             .map_err(|e| UploadVideoError::Database(format!("Erro ao salvar arquivo: {}", e)))?;
 
+        if let Some(old_url) = &video.video_url {
+            if let Ok(old_blob_name) = storage.get_blob_name_from_url(old_url) {
+                if let Err(e) = storage.delete_video(&old_blob_name).await {
+                    eprintln!("Falha ao deletar vídeo antigo '{}': {:?}", old_blob_name, e);
+                }
+            }
+        }
+
         state
             .video_repo
             .update(
