@@ -5,10 +5,13 @@ use tokio::signal;
 use tracing_subscriber::prelude::*;
 use tracing_subscriber::{fmt, EnvFilter};
 
+use axum::http;
 use shared::modules::app_state;
 use shared::modules::app_state::AppState;
 use shared::modules::config::Config;
 use shared::modules::interceptors::transform_middleware::transform_middleware;
+use tower_http::trace::TraceLayer;
+use tracing::Level;
 
 mod modules;
 mod routes;
@@ -31,6 +34,21 @@ async fn main() -> anyhow::Result<()> {
     let app = Router::new()
         .nest("/admin", routes::create_router())
         .route("/", get(|| async { "Admin API - Running" }))
+        .layer(
+            TraceLayer::new_for_http()
+                .make_span_with(|req: &http::Request<_>| {
+                    tracing::info_span!(
+                        "request",
+                        method = %req.method(),
+                        uri = %req.uri(),
+                    )
+                })
+                .on_response(
+                    tower_http::trace::DefaultOnResponse::new()
+                        .level(Level::INFO)
+                        .latency_unit(tower_http::LatencyUnit::Millis),
+                ),
+        )
         .layer(axum::middleware::from_fn(transform_middleware))
         .layer(Extension(app_state.clone()));
 
