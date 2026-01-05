@@ -24,19 +24,16 @@ args = [
 description = "Starts the auth_api"
 command = "cargo"
 args = ["run", "--package", "auth_api"]
-detached = true
 
 [tasks.start-admin-api]
 description = "Starts the admin_api"
 command = "cargo"
 args = ["run", "--package", "admin_api"]
-detached = true
 
 [tasks.start-viewer-api]
 description = "Starts the viewer_api"
 command = "cargo"
 args = ["run", "--package", "viewer_api"]
-detached = true
 
 [tasks.generate-schema]
 description = "Gera os entities do SeaORM"

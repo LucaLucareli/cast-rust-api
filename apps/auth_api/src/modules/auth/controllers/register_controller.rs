@@ -2,17 +2,11 @@ use crate::modules::auth::dto::register_input_dto::RegisterInputDTO;
 use crate::modules::auth::dto::register_output_dto::RegisterOutputDTO;
 use crate::AppState;
 use axum::{extract::Extension, http::StatusCode, Json};
-use serde::Serialize;
 use shared::modules::response_interface::ResponseInterface;
 use shared::modules::validation::validation_layer::{
     validate_json, ValidatedJson, ValidationErrorResponse,
 };
 use std::sync::Arc;
-
-#[derive(Serialize)]
-pub struct ErrorResponse {
-    pub error: String,
-}
 
 #[axum::debug_handler]
 pub async fn handler(
