@@ -1,10 +1,10 @@
+use crate::modules::database::repositories::dto::find_many_video_output_dto::FindManyVideoOutputDTO;
 use crate::modules::database::schema::videos;
 use crate::modules::database::schema::videos::Model as VideoModel;
 use chrono::Utc;
 use sea_orm::entity::prelude::*;
-use sea_orm::QueryOrder;
-use sea_orm::QuerySelect;
 use sea_orm::{DatabaseConnection, DbErr, Set};
+use sea_orm::{QueryFilter, QueryOrder, QuerySelect};
 use serde::Deserialize;
 
 #[derive(Debug, Deserialize)]
@@ -105,6 +105,51 @@ impl VideosRepository {
         }
 
         query.all(&self.db).await
+    }
+
+    pub async fn find_many_videos(
+        &self,
+        name: Option<&str>,
+        serie_id: Option<i32>,
+        skip: Option<i32>,
+        take: Option<i32>,
+    ) -> Result<Vec<FindManyVideoOutputDTO>, sea_orm::DbErr> {
+        let mut query = videos::Entity::find()
+            .select_only()
+            .columns([
+                videos::Column::Id,
+                videos::Column::Title,
+                videos::Column::Description,
+                videos::Column::DurationSeconds,
+                videos::Column::IsAvailable,
+                videos::Column::Rating,
+                videos::Column::SeriesId,
+                videos::Column::EpisodeNumber,
+                videos::Column::SeasonNumber,
+                videos::Column::ReleaseYear,
+            ])
+            .order_by_desc(videos::Column::EpisodeNumber);
+
+        if let Some(serie_id) = serie_id {
+            query = query.filter(videos::Column::SeriesId.eq(serie_id))
+        }
+
+        if let Some(title) = name {
+            query = query.filter(videos::Column::Title.contains(title));
+        }
+
+        if let Some(skip) = skip {
+            query = query.offset(skip as u64);
+        }
+
+        if let Some(take) = take {
+            query = query.limit(take as u64);
+        }
+
+        query
+            .into_model::<FindManyVideoOutputDTO>()
+            .all(&self.db)
+            .await
     }
 
     pub async fn update(&self, video_id: i32, request: UpdateVideoRequest) -> Result<i32, DbErr> {
